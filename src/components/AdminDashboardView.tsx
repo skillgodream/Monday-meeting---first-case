@@ -30,7 +30,7 @@ import {
   AlertCircle,
   ArrowUpRight,
   TrendingUp,
-  AlertTriangle
+  ChevronDown
 } from 'lucide-react';
 import { Lesson } from '../types';
 import { INITIAL_LESSONS } from '../data/lessonsData';
@@ -278,12 +278,12 @@ export default function AdminDashboardView({
                 sounds.playTap();
                 setActiveViewMode('landing');
               }}
-              className="text-[11px] font-bold tracking-wider uppercase text-slate-400 hover:text-white flex items-center gap-1 transition-colors cursor-pointer mb-1"
+              className="text-[11px] font-bold tracking-widest uppercase text-[#8E8E93] hover:text-white flex items-center gap-1 transition-colors cursor-pointer mb-1"
             >
               ← ADMIN WORKSPACE
             </button>
           ) : (
-            <span className="text-[11px] font-bold tracking-wider uppercase text-slate-400 block">
+            <span className="text-[11px] font-bold tracking-widest uppercase text-[#8E8E93] block">
               ADMIN WORKSPACE
             </span>
           )}
@@ -299,11 +299,9 @@ export default function AdminDashboardView({
               ? 'Assignments'
               : activeViewMode === 'repository'
               ? 'Content Library'
-              : activeViewMode === 'reports'
-              ? 'Compliance Reports'
               : 'Training Readiness'}
           </h1>
-          <p className="text-xs text-slate-400 font-normal leading-relaxed">
+          <p className="text-xs text-[#8E8E93] font-normal leading-relaxed">
             {activeViewMode === 'landing'
               ? 'Manage your organisation, content and training.'
               : activeViewMode === 'users'
@@ -314,8 +312,6 @@ export default function AdminDashboardView({
               ? 'Deploy mandatory procedures and track frontline compliance.'
               : activeViewMode === 'repository'
               ? 'Scan, upload and manage SOPs and training content.'
-              : activeViewMode === 'reports'
-              ? 'Audit-ready compliance verification records.'
               : 'Track progress, completion and key insights.'}
           </p>
         </div>
@@ -348,7 +344,7 @@ export default function AdminDashboardView({
       </header>
 
       {/* ========================================================================= */}
-      {/* 1. LANDING PAGE HUB VIEW (Matching Screenshot 8.26.28 PM)                  */}
+      {/* 1. LANDING PAGE HUB VIEW                                                   */}
       {/* ========================================================================= */}
       {activeViewMode === 'landing' && (
         <div className="space-y-6 animate-in fade-in duration-200">
@@ -369,12 +365,12 @@ export default function AdminDashboardView({
                 </div>
                 <div className="min-w-0">
                   <h3 className="text-base font-bold text-white tracking-tight">Users</h3>
-                  <p className="text-xs text-slate-400 font-normal mt-0.5 truncate">
+                  <p className="text-xs text-[#8E8E93] font-normal mt-0.5 truncate">
                     Manage learners, teams and access
                   </p>
                 </div>
               </div>
-              <ChevronRight size={18} className="text-slate-400 shrink-0 ml-2" />
+              <ChevronRight size={18} className="text-[#8E8E93] shrink-0 ml-2" />
             </div>
 
             {/* 2. Assignments */}
@@ -391,12 +387,12 @@ export default function AdminDashboardView({
                 </div>
                 <div className="min-w-0">
                   <h3 className="text-base font-bold text-white tracking-tight">Assignments</h3>
-                  <p className="text-xs text-slate-400 font-normal mt-0.5 truncate">
+                  <p className="text-xs text-[#8E8E93] font-normal mt-0.5 truncate">
                     Create and track training assignments
                   </p>
                 </div>
               </div>
-              <ChevronRight size={18} className="text-slate-400 shrink-0 ml-2" />
+              <ChevronRight size={18} className="text-[#8E8E93] shrink-0 ml-2" />
             </div>
 
             {/* 3. Settings */}
@@ -413,12 +409,12 @@ export default function AdminDashboardView({
                 </div>
                 <div className="min-w-0">
                   <h3 className="text-base font-bold text-white tracking-tight">Settings</h3>
-                  <p className="text-xs text-slate-400 font-normal mt-0.5 truncate">
+                  <p className="text-xs text-[#8E8E93] font-normal mt-0.5 truncate">
                     Configure organisation and preferences
                   </p>
                 </div>
               </div>
-              <ChevronRight size={18} className="text-slate-400 shrink-0 ml-2" />
+              <ChevronRight size={18} className="text-[#8E8E93] shrink-0 ml-2" />
             </div>
           </div>
 
@@ -441,11 +437,11 @@ export default function AdminDashboardView({
                   <div className="w-9 h-9 rounded-xl bg-[#1C1C1E] text-white flex items-center justify-center border border-white/10">
                     <BookOpen size={18} />
                   </div>
-                  <ChevronRight size={16} className="text-slate-400" />
+                  <ChevronRight size={16} className="text-[#8E8E93]" />
                 </div>
                 <div>
                   <h4 className="text-sm font-bold text-white tracking-tight">SOP Repository</h4>
-                  <p className="text-[11px] text-slate-400 font-normal mt-0.5 line-clamp-2">
+                  <p className="text-[11px] text-[#8E8E93] font-normal mt-0.5 line-clamp-2">
                     Browse, upload and manage content
                   </p>
                 </div>
@@ -463,11 +459,11 @@ export default function AdminDashboardView({
                   <div className="w-9 h-9 rounded-xl bg-[#1C1C1E] text-white flex items-center justify-center border border-white/10">
                     <BarChart2 size={18} />
                   </div>
-                  <ChevronRight size={16} className="text-slate-400" />
+                  <ChevronRight size={16} className="text-[#8E8E93]" />
                 </div>
                 <div>
                   <h4 className="text-sm font-bold text-white tracking-tight">Reports</h4>
-                  <p className="text-[11px] text-slate-400 font-normal mt-0.5 line-clamp-2">
+                  <p className="text-[11px] text-[#8E8E93] font-normal mt-0.5 line-clamp-2">
                     View training progress and analytics
                   </p>
                 </div>
@@ -475,7 +471,7 @@ export default function AdminDashboardView({
             </div>
           </div>
 
-          {/* C. Recent Activity Feed (Single Parent Container - ZERO Nested Inner Cards) */}
+          {/* C. Recent Activity Feed */}
           <div className="space-y-3 pt-1">
             <div className="flex items-center justify-between px-1">
               <h3 className="text-base font-bold text-white tracking-tight">
@@ -486,13 +482,12 @@ export default function AdminDashboardView({
                   sounds.playTap();
                   setActiveViewMode('reports');
                 }}
-                className="text-xs font-semibold text-slate-400 hover:text-white transition-colors cursor-pointer"
+                className="text-xs font-semibold text-[#8E8E93] hover:text-white transition-colors cursor-pointer"
               >
                 View All
               </button>
             </div>
 
-            {/* Single Container with divide-y hairline dividers */}
             <div className="bg-[#0A0A0C] rounded-2xl border border-white/10 divide-y divide-white/10 overflow-hidden">
               <div className="p-4 flex items-center justify-between gap-3">
                 <div className="flex items-center gap-3.5 min-w-0">
@@ -501,10 +496,10 @@ export default function AdminDashboardView({
                   </div>
                   <div className="min-w-0">
                     <h5 className="text-xs sm:text-sm font-bold text-white truncate">New SOP uploaded</h5>
-                    <p className="text-[11px] text-slate-400 truncate mt-0.5">Aircraft Turnaround Safety SOP</p>
+                    <p className="text-[11px] text-[#8E8E93] truncate mt-0.5">Aircraft Turnaround Safety SOP</p>
                   </div>
                 </div>
-                <span className="text-[11px] font-mono text-slate-400 shrink-0">2h ago</span>
+                <span className="text-[11px] font-mono text-[#8E8E93] shrink-0">2h ago</span>
               </div>
 
               <div className="p-4 flex items-center justify-between gap-3">
@@ -514,10 +509,10 @@ export default function AdminDashboardView({
                   </div>
                   <div className="min-w-0">
                     <h5 className="text-xs sm:text-sm font-bold text-white truncate">12 users assigned</h5>
-                    <p className="text-[11px] text-slate-400 truncate mt-0.5">Ground Operations Team</p>
+                    <p className="text-[11px] text-[#8E8E93] truncate mt-0.5">Ground Operations Team</p>
                   </div>
                 </div>
-                <span className="text-[11px] font-mono text-slate-400 shrink-0">4h ago</span>
+                <span className="text-[11px] font-mono text-[#8E8E93] shrink-0">4h ago</span>
               </div>
 
               <div className="p-4 flex items-center justify-between gap-3">
@@ -527,10 +522,10 @@ export default function AdminDashboardView({
                   </div>
                   <div className="min-w-0">
                     <h5 className="text-xs sm:text-sm font-bold text-white truncate">Training completed</h5>
-                    <p className="text-[11px] text-slate-400 truncate mt-0.5">Passenger Boarding Procedures</p>
+                    <p className="text-[11px] text-[#8E8E93] truncate mt-0.5">Passenger Boarding Procedures</p>
                   </div>
                 </div>
-                <span className="text-[11px] font-mono text-slate-400 shrink-0">6h ago</span>
+                <span className="text-[11px] font-mono text-[#8E8E93] shrink-0">6h ago</span>
               </div>
             </div>
           </div>
@@ -539,12 +534,11 @@ export default function AdminDashboardView({
       )}
 
       {/* ========================================================================= */}
-      {/* 2. USER MANAGEMENT SUB-PAGE (Matching Screenshot 8.21.44 PM)              */}
+      {/* 2. USER MANAGEMENT SUB-PAGE                                                */}
       {/* ========================================================================= */}
       {activeViewMode === 'users' && (
         <div className="space-y-4 animate-in fade-in duration-200">
           
-          {/* Action Row: Search Input + Solid White "+ Add User" Button */}
           <div className="flex items-center gap-3">
             <div className="relative flex-1">
               <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
@@ -568,10 +562,9 @@ export default function AdminDashboardView({
             </button>
           </div>
 
-          {/* User List Container: SINGLE Parent Box with divide-y dividers (Zero Card Nesting!) */}
           <div className="bg-[#0A0A0C] rounded-2xl border border-white/10 divide-y divide-white/10 overflow-hidden">
             {filteredUsers.length === 0 ? (
-              <div className="p-8 text-center text-xs text-slate-400">
+              <div className="p-8 text-center text-xs text-[#8E8E93]">
                 No staff found matching query.
               </div>
             ) : (
@@ -582,11 +575,11 @@ export default function AdminDashboardView({
                 >
                   <div className="min-w-0">
                     <span className="text-sm font-bold text-white block truncate">{u.name}</span>
-                    <span className="text-xs font-mono text-slate-400 block truncate mt-0.5">{u.email}</span>
+                    <span className="text-xs font-mono text-[#8E8E93] block truncate mt-0.5">{u.email}</span>
                   </div>
 
                   <div className="flex items-center gap-3 shrink-0">
-                    <span className="text-xs font-medium text-slate-400 bg-[#1C1C1E] px-3 py-1 rounded-full text-center min-w-[70px]">
+                    <span className="text-xs font-medium text-slate-300 bg-[#1C1C1E] px-3 py-1 rounded-full text-center min-w-[70px]">
                       {u.role}
                     </span>
 
@@ -595,7 +588,7 @@ export default function AdminDashboardView({
                         sounds.playTap();
                         setUserToDelete(u);
                       }}
-                      className="p-1.5 rounded-lg hover:bg-rose-500/20 text-slate-500 hover:text-rose-400 transition-colors cursor-pointer"
+                      className="p-1.5 rounded-lg hover:bg-rose-500/20 text-[#8E8E93] hover:text-rose-400 transition-colors cursor-pointer"
                       title="Delete User"
                     >
                       <Trash2 size={15} />
@@ -609,16 +602,15 @@ export default function AdminDashboardView({
       )}
 
       {/* ========================================================================= */}
-      {/* 3. SETTINGS SUB-PAGE (Matching Screenshot 8.22.06 PM)                     */}
+      {/* 3. SETTINGS SUB-PAGE                                                       */}
       {/* ========================================================================= */}
       {activeViewMode === 'settings' && (
         <div className="space-y-4 animate-in fade-in duration-200">
           
-          {/* Header Card with Save Settings button */}
           <div className="p-5 bg-[#0A0A0C] rounded-2xl border border-white/10 flex items-start justify-between gap-4">
             <div className="space-y-1">
               <h3 className="text-base font-bold text-white">Global Training & Safety Controls</h3>
-              <p className="text-xs text-slate-400 leading-relaxed">
+              <p className="text-xs text-[#8E8E93] leading-relaxed">
                 Pass threshold (85%), retry limits, and strict safety breach controls.
               </p>
             </div>
@@ -630,13 +622,11 @@ export default function AdminDashboardView({
             </button>
           </div>
 
-          {/* Settings Group Container: SINGLE Parent Box with divide-y dividers */}
           <div className="bg-[#0A0A0C] rounded-2xl border border-white/10 divide-y divide-white/10 overflow-hidden">
-            {/* Setting 1: Passing Score Threshold */}
             <div className="p-5 space-y-3">
               <div className="space-y-0.5">
                 <h4 className="text-sm font-bold text-white">Global Passing Score Threshold</h4>
-                <p className="text-xs text-slate-400">
+                <p className="text-xs text-[#8E8E93]">
                   Solo Test Me score required for certification (Preset: 85%).
                 </p>
               </div>
@@ -653,11 +643,10 @@ export default function AdminDashboardView({
               </div>
             </div>
 
-            {/* Setting 2: Assessment Retry Limits */}
             <div className="p-5 space-y-3">
               <div className="space-y-0.5">
                 <h4 className="text-sm font-bold text-white">Assessment Retry Limits</h4>
-                <p className="text-xs text-slate-400">
+                <p className="text-xs text-[#8E8E93]">
                   Attempts allowed before triggering supervisor observation.
                 </p>
               </div>
@@ -672,7 +661,7 @@ export default function AdminDashboardView({
                     className={`w-10 h-10 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                       maxRetries === num
                         ? 'bg-white text-black font-bold'
-                        : 'bg-[#1C1C1E] border border-white/10 text-slate-400 hover:text-white'
+                        : 'bg-[#1C1C1E] border border-white/10 text-[#8E8E93] hover:text-white'
                     }`}
                   >
                     {num}
@@ -681,11 +670,10 @@ export default function AdminDashboardView({
               </div>
             </div>
 
-            {/* Setting 3: Strict Safety Breach Lockdown */}
             <div className="p-5 space-y-3">
               <div className="space-y-0.5">
                 <h4 className="text-sm font-bold text-white">Strict Safety Breach Lockdown</h4>
-                <p className="text-xs text-slate-400">
+                <p className="text-xs text-[#8E8E93]">
                   Instant failure if any critical safety control gate is violated.
                 </p>
               </div>
@@ -697,7 +685,7 @@ export default function AdminDashboardView({
                 className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                   strictMode
                     ? 'bg-white text-black'
-                    : 'bg-[#1C1C1E] border border-white/10 text-slate-400'
+                    : 'bg-[#1C1C1E] border border-white/10 text-[#8E8E93]'
                 }`}
               >
                 {strictMode ? 'Enabled' : 'Disabled'}
@@ -708,26 +696,24 @@ export default function AdminDashboardView({
       )}
 
       {/* ========================================================================= */}
-      {/* 4. ASSIGNMENTS SUB-PAGE (Matching Screenshot 8.22.57 PM)                 */}
+      {/* 4. ASSIGNMENTS SUB-PAGE                                                    */}
       {/* ========================================================================= */}
       {activeViewMode === 'assignments' && (
         <div className="space-y-4 animate-in fade-in duration-200">
           
-          {/* Header Card */}
           <div className="p-5 bg-[#0A0A0C] rounded-2xl border border-white/10 space-y-1">
             <h3 className="text-base font-bold text-white">Organization-Wide Training Campaigns</h3>
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-[#8E8E93]">
               Deploy mandatory procedures and track frontline compliance across cohorts.
             </p>
           </div>
 
-          {/* Campaigns Container: SINGLE Parent Box with divide-y dividers */}
           <div className="bg-[#0A0A0C] rounded-2xl border border-white/10 divide-y divide-white/10 overflow-hidden">
             {campaigns.map((camp) => (
               <div key={camp.id} className="p-5 space-y-3">
                 <div className="space-y-1">
                   <h4 className="text-sm font-bold text-white">{camp.title}</h4>
-                  <p className="text-xs text-slate-400">
+                  <p className="text-xs text-[#8E8E93]">
                     SOP: {camp.sop} · Target: {camp.target}
                   </p>
                 </div>
@@ -753,190 +739,257 @@ export default function AdminDashboardView({
       )}
 
       {/* ========================================================================= */}
-      {/* 5. REPORTS SUB-PAGE (Matching Screenshot 8.24.04 PM)                      */}
+      {/* 5. REPORTS & CONTROL TOWER (EXACT REPLICA OF Screenshot 8.26.34 PM)         */}
       {/* ========================================================================= */}
-      {activeViewMode === 'reports' && (
+      {(activeViewMode === 'reports' || activeViewMode === 'control_tower') && (
         <div className="space-y-4 animate-in fade-in duration-200">
           
-          {/* Top Banner Card */}
-          <div className="p-5 bg-[#0A0A0C] rounded-2xl border border-white/10 space-y-3">
-            <div className="space-y-1">
-              <h3 className="text-base font-bold text-white">Audit-Ready Compliance Reporting</h3>
-              <p className="text-xs text-slate-400 leading-relaxed">
-                Generate timestamped compliance CSV verification records certifying completed solo drills.
-              </p>
-            </div>
-            <button
-              onClick={handleExportCSV}
-              className="px-4 py-2.5 rounded-xl bg-white hover:bg-slate-100 text-black font-bold text-xs flex items-center gap-1.5 cursor-pointer transition-all"
-            >
-              <Download size={14} />
-              <span>Export Audit CSV</span>
-            </button>
-          </div>
-
-          {/* 3 Metric Cards Row (Exact Screenshot 8.24.04 PM layout) */}
-          <div className="grid grid-cols-3 gap-3 text-center">
-            <div className="p-4 rounded-2xl border border-white/10 bg-[#0A0A0C] flex flex-col justify-center items-center h-28">
-              <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider leading-tight">
-                COMPLIANCE RATE
-              </span>
-              <span className="text-2xl sm:text-3xl font-black text-white font-mono mt-2 block">
-                94.2%
-              </span>
+          {/* Action Row: Export CSV & Time Period Dropdown (No duplicate title) */}
+          <div className="flex items-center justify-between gap-3 pt-1">
+            <div className="text-xs font-bold text-[#8E8E93] uppercase tracking-widest">
+              REPORTS & ANALYTICS
             </div>
 
-            <div className="p-4 rounded-2xl border border-white/10 bg-[#0A0A0C] flex flex-col justify-center items-center h-28">
-              <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider leading-tight">
-                CERTIFIED ASSOCIATES
-              </span>
-              <span className="text-2xl sm:text-3xl font-black text-white font-mono mt-2 block">
-                142
-              </span>
-            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                onClick={handleExportCSV}
+                className="px-3.5 py-2 rounded-xl bg-white text-black hover:bg-slate-100 font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-md"
+                title="Export CSV Audit Log"
+              >
+                <Download size={14} />
+                <span>Export CSV</span>
+              </button>
 
-            <div className="p-4 rounded-2xl border border-white/10 bg-[#0A0A0C] flex flex-col justify-center items-center h-28">
-              <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider leading-tight">
-                SAFETY NON-CONFORMANCES
-              </span>
-              <span className="text-2xl sm:text-3xl font-black text-white font-mono mt-2 block">
-                0
-              </span>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ========================================================================= */}
-      {/* 6. CONTROL TOWER SUB-PAGE (Matching Screenshot 8.26.34 PM)                */}
-      {/* ========================================================================= */}
-      {activeViewMode === 'control_tower' && (
-        <div className="space-y-4 animate-in fade-in duration-200">
-          
-          {/* Header Bar */}
-          <div className="flex items-center justify-between">
-            <div>
-              <span className="text-[10px] font-bold tracking-wider uppercase text-slate-400 block">
-                REPORTS & ANALYTICS
-              </span>
-              <h3 className="text-xl font-bold text-white tracking-tight mt-0.5">Training Readiness</h3>
-              <p className="text-xs text-slate-400">Track progress, completion and key insights.</p>
-            </div>
-
-            <select
-              value={timePeriod}
-              onChange={(e) => setTimePeriod(e.target.value)}
-              className="h-9 px-3 rounded-xl bg-[#1C1C1E] border border-white/10 text-xs font-semibold text-white focus:outline-none cursor-pointer"
-            >
-              <option value="Last 30 Days">Last 30 Days</option>
-              <option value="Last 90 Days">Last 90 Days</option>
-            </select>
-          </div>
-
-          {/* 4 Stat Cards */}
-          <div className="grid grid-cols-4 gap-2.5 text-left">
-            <div className="p-3.5 rounded-2xl border border-white/10 bg-[#0A0A0C]">
-              <span className="text-xl font-bold text-white font-mono block">245</span>
-              <span className="text-[10px] text-slate-400 mt-0.5 block">Total Users</span>
-            </div>
-            <div className="p-3.5 rounded-2xl border border-white/10 bg-[#0A0A0C]">
-              <span className="text-xl font-bold text-white font-mono block">198</span>
-              <span className="text-[10px] text-slate-400 mt-0.5 block">Completed (81%)</span>
-            </div>
-            <div className="p-3.5 rounded-2xl border border-white/10 bg-[#0A0A0C]">
-              <span className="text-xl font-bold text-white font-mono block">32</span>
-              <span className="text-[10px] text-slate-400 mt-0.5 block">In Progress (13%)</span>
-            </div>
-            <div className="p-3.5 rounded-2xl border border-white/10 bg-[#0A0A0C]">
-              <span className="text-xl font-bold text-white font-mono block">15</span>
-              <span className="text-[10px] text-slate-400 mt-0.5 block">Not Started (6%)</span>
-            </div>
-          </div>
-
-          {/* Completion Rate Card */}
-          <div className="p-5 rounded-2xl border border-white/10 bg-[#0A0A0C] space-y-3">
-            <h4 className="text-sm font-bold text-white">Completion Rate</h4>
-            <div className="flex items-center gap-6">
-              {/* Simple Clean Ring Graphic */}
-              <div className="relative w-24 h-24 rounded-full border-8 border-white border-t-slate-700 flex items-center justify-center shrink-0">
-                <span className="text-lg font-black text-white font-mono">81%</span>
-              </div>
-              <div className="space-y-2 text-xs font-medium text-slate-300">
-                <div className="flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full bg-white" />
-                  <span>Completed: 198</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full bg-slate-500" />
-                  <span>In Progress: 32</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full bg-slate-700" />
-                  <span>Not Started: 15</span>
-                </div>
+              <div className="relative">
+                <select
+                  value={timePeriod}
+                  onChange={(e) => setTimePeriod(e.target.value)}
+                  className="appearance-none h-9 pl-3.5 pr-8 rounded-xl bg-[#1C1C1E] border border-white/10 text-xs font-semibold text-white focus:outline-none cursor-pointer"
+                >
+                  <option value="Last 30 Days">Last 30 Days</option>
+                  <option value="Last 90 Days">Last 90 Days</option>
+                  <option value="Year to Date">Year to Date</option>
+                </select>
+                <ChevronDown size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#8E8E93] pointer-events-none" />
               </div>
             </div>
           </div>
 
-          {/* Training by Category */}
+          {/* 4 Equal Top Cards Row (Total Users, Completed, In Progress, Not Started) */}
+          <div className="grid grid-cols-4 gap-2.5">
+            {/* Card 1 */}
+            <div className="p-3.5 sm:p-4 rounded-2xl border border-white/10 bg-[#0A0A0C] flex flex-col justify-center">
+              <span className="text-xl sm:text-2xl font-bold text-white font-mono block leading-none">
+                245
+              </span>
+              <span className="text-[11px] text-[#8E8E93] font-medium mt-1.5 block truncate">
+                Total Users
+              </span>
+            </div>
+
+            {/* Card 2 */}
+            <div className="p-3.5 sm:p-4 rounded-2xl border border-white/10 bg-[#0A0A0C] flex flex-col justify-center">
+              <span className="text-xl sm:text-2xl font-bold text-white font-mono block leading-none">
+                198
+              </span>
+              <span className="text-[11px] text-[#8E8E93] font-medium mt-1.5 block truncate">
+                Completed <span className="text-[#8E8E93] font-normal">(81%)</span>
+              </span>
+            </div>
+
+            {/* Card 3 */}
+            <div className="p-3.5 sm:p-4 rounded-2xl border border-white/10 bg-[#0A0A0C] flex flex-col justify-center">
+              <span className="text-xl sm:text-2xl font-bold text-white font-mono block leading-none">
+                32
+              </span>
+              <span className="text-[11px] text-[#8E8E93] font-medium mt-1.5 block truncate">
+                In Progress <span className="text-[#8E8E93] font-normal">(13%)</span>
+              </span>
+            </div>
+
+            {/* Card 4 */}
+            <div className="p-3.5 sm:p-4 rounded-2xl border border-white/10 bg-[#0A0A0C] flex flex-col justify-center">
+              <span className="text-xl sm:text-2xl font-bold text-white font-mono block leading-none">
+                15
+              </span>
+              <span className="text-[11px] text-[#8E8E93] font-medium mt-1.5 block truncate">
+                Not Started <span className="text-[#8E8E93] font-normal">(6%)</span>
+              </span>
+            </div>
+          </div>
+
+          {/* Section 1: Completion Rate Card with Donut Chart */}
+          <div className="p-5 rounded-2xl border border-white/10 bg-[#0A0A0C] space-y-4">
+            <h3 className="text-base font-bold text-white tracking-tight">Completion Rate</h3>
+
+            <div className="flex items-center gap-6 sm:gap-10 pt-1">
+              {/* High-Fidelity Donut Ring */}
+              <div className="relative w-28 h-28 sm:w-32 sm:h-32 flex items-center justify-center shrink-0">
+                <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+                  {/* Background Ring */}
+                  <path
+                    className="text-[#2C2C2E]"
+                    strokeWidth="3.8"
+                    stroke="currentColor"
+                    fill="none"
+                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                  />
+                  {/* Arc Segment (81% Completed) */}
+                  <path
+                    className="text-white"
+                    strokeDasharray="81, 100"
+                    strokeWidth="3.8"
+                    strokeLinecap="round"
+                    stroke="currentColor"
+                    fill="none"
+                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                  />
+                </svg>
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <span className="text-xl sm:text-2xl font-black text-white font-mono">81%</span>
+                </div>
+              </div>
+
+              {/* Legend List */}
+              <div className="flex-1 space-y-3 text-xs">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <span className="w-2.5 h-2.5 rounded-full bg-white shrink-0" />
+                    <span className="text-slate-200 font-medium">Completed</span>
+                  </div>
+                  <span className="font-mono font-bold text-white">198</span>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <span className="w-2.5 h-2.5 rounded-full bg-[#8E8E93] shrink-0" />
+                    <span className="text-slate-200 font-medium">In Progress</span>
+                  </div>
+                  <span className="font-mono font-bold text-white">32</span>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <span className="w-2.5 h-2.5 rounded-full bg-[#3A3A3C] shrink-0" />
+                    <span className="text-slate-200 font-medium">Not Started</span>
+                  </div>
+                  <span className="font-mono font-bold text-white">15</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Section 2: Training by Category Card */}
           <div className="p-5 rounded-2xl border border-white/10 bg-[#0A0A0C] space-y-4">
             <div className="flex items-center justify-between">
-              <h4 className="text-sm font-bold text-white">Training by Category</h4>
-              <span className="text-xs text-slate-400 font-semibold cursor-pointer">View All</span>
+              <h3 className="text-base font-bold text-white tracking-tight">Training by Category</h3>
+              <button className="text-xs font-semibold text-[#8E8E93] hover:text-white transition-colors cursor-pointer">
+                View All
+              </button>
             </div>
 
-            <div className="space-y-3 text-xs">
-              <div className="space-y-1">
-                <div className="flex justify-between font-semibold">
-                  <span className="text-slate-300">Safety</span>
-                  <span className="text-white font-mono">92%</span>
-                </div>
-                <div className="w-full bg-white/10 h-2 rounded-full overflow-hidden">
+            <div className="space-y-3.5 text-xs pt-1">
+              {/* Safety */}
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-slate-200 font-medium w-32 shrink-0">Safety</span>
+                <div className="flex-1 bg-[#2C2C2E] h-2.5 rounded-full overflow-hidden">
                   <div className="bg-white h-full rounded-full" style={{ width: '92%' }} />
                 </div>
+                <span className="font-mono font-bold text-white w-10 text-right shrink-0">92%</span>
               </div>
 
-              <div className="space-y-1">
-                <div className="flex justify-between font-semibold">
-                  <span className="text-slate-300">Operations</span>
-                  <span className="text-white font-mono">78%</span>
-                </div>
-                <div className="w-full bg-white/10 h-2 rounded-full overflow-hidden">
+              {/* Operations */}
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-slate-200 font-medium w-32 shrink-0">Operations</span>
+                <div className="flex-1 bg-[#2C2C2E] h-2.5 rounded-full overflow-hidden">
                   <div className="bg-white h-full rounded-full" style={{ width: '78%' }} />
                 </div>
+                <span className="font-mono font-bold text-white w-10 text-right shrink-0">78%</span>
               </div>
 
-              <div className="space-y-1">
-                <div className="flex justify-between font-semibold">
-                  <span className="text-slate-300">Customer Service</span>
-                  <span className="text-white font-mono">84%</span>
-                </div>
-                <div className="w-full bg-white/10 h-2 rounded-full overflow-hidden">
+              {/* Customer Service */}
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-slate-200 font-medium w-32 shrink-0">Customer Service</span>
+                <div className="flex-1 bg-[#2C2C2E] h-2.5 rounded-full overflow-hidden">
                   <div className="bg-white h-full rounded-full" style={{ width: '84%' }} />
                 </div>
+                <span className="font-mono font-bold text-white w-10 text-right shrink-0">84%</span>
               </div>
 
-              <div className="space-y-1">
-                <div className="flex justify-between font-semibold">
-                  <span className="text-slate-300">Compliance</span>
-                  <span className="text-white font-mono">70%</span>
-                </div>
-                <div className="w-full bg-white/10 h-2 rounded-full overflow-hidden">
+              {/* Compliance */}
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-slate-200 font-medium w-32 shrink-0">Compliance</span>
+                <div className="flex-1 bg-[#2C2C2E] h-2.5 rounded-full overflow-hidden">
                   <div className="bg-white h-full rounded-full" style={{ width: '70%' }} />
                 </div>
+                <span className="font-mono font-bold text-white w-10 text-right shrink-0">70%</span>
               </div>
             </div>
           </div>
+
+          {/* Section 3: Recent Performance Container (Zero Nested Inner Cards) */}
+          <div className="space-y-3 pt-1">
+            <div className="flex items-center justify-between px-1">
+              <h3 className="text-base font-bold text-white tracking-tight">Recent Performance</h3>
+              <button className="text-xs font-semibold text-[#8E8E93] hover:text-white transition-colors cursor-pointer">
+                View All
+              </button>
+            </div>
+
+            <div className="bg-[#0A0A0C] rounded-2xl border border-white/10 divide-y divide-white/10 overflow-hidden">
+              {/* Row 1: Completion rate increased */}
+              <div className="p-4 flex items-center justify-between gap-3 hover:bg-white/[0.02] transition-colors cursor-pointer">
+                <div className="flex items-center gap-3.5 min-w-0">
+                  <div className="w-10 h-10 rounded-full bg-[#0F291E] border border-emerald-500/30 text-emerald-400 flex items-center justify-center shrink-0">
+                    <TrendingUp size={18} />
+                  </div>
+                  <div className="min-w-0">
+                    <h5 className="text-xs sm:text-sm font-bold text-white truncate">Completion rate increased</h5>
+                    <p className="text-[11px] text-[#8E8E93] truncate mt-0.5">Compared to previous 30 days</p>
+                  </div>
+                </div>
+                <span className="text-sm font-bold text-emerald-400 font-mono shrink-0">+12%</span>
+              </div>
+
+              {/* Row 2: 5 teams achieved 100% */}
+              <div className="p-4 flex items-center justify-between gap-3 hover:bg-white/[0.02] transition-colors cursor-pointer">
+                <div className="flex items-center gap-3.5 min-w-0">
+                  <div className="w-10 h-10 rounded-full bg-[#1C1C1E] border border-white/10 text-white flex items-center justify-center shrink-0">
+                    <Users size={18} />
+                  </div>
+                  <div className="min-w-0">
+                    <h5 className="text-xs sm:text-sm font-bold text-white truncate">5 teams achieved 100%</h5>
+                    <p className="text-[11px] text-[#8E8E93] truncate mt-0.5">Ground Ops, Cabin Crew, Finance...</p>
+                  </div>
+                </div>
+                <ChevronRight size={18} className="text-[#8E8E93] shrink-0" />
+              </div>
+
+              {/* Row 3: 15 learners overdue */}
+              <div className="p-4 flex items-center justify-between gap-3 hover:bg-white/[0.02] transition-colors cursor-pointer">
+                <div className="flex items-center gap-3.5 min-w-0">
+                  <div className="w-10 h-10 rounded-full bg-[#1C1C1E] border border-white/10 text-white flex items-center justify-center shrink-0">
+                    <AlertCircle size={18} />
+                  </div>
+                  <div className="min-w-0">
+                    <h5 className="text-xs sm:text-sm font-bold text-white truncate">15 learners overdue</h5>
+                    <p className="text-[11px] text-[#8E8E93] truncate mt-0.5">Require follow-up</p>
+                  </div>
+                </div>
+                <ChevronRight size={18} className="text-[#8E8E93] shrink-0" />
+              </div>
+            </div>
+          </div>
+
         </div>
       )}
 
       {/* ========================================================================= */}
-      {/* 7. REPOSITORY SUB-PAGE (Matching Screenshot 8.18.40 PM)                   */}
+      {/* 6. REPOSITORY SUB-PAGE                                                    */}
       {/* ========================================================================= */}
       {activeViewMode === 'repository' && (
         <div className="space-y-4 animate-in fade-in duration-200">
           
-          {/* Top Action Buttons: Camera Scan SOP + Upload SOP */}
           <div className="grid grid-cols-2 gap-3">
             <button
               onClick={() => {
@@ -961,7 +1014,6 @@ export default function AdminDashboardView({
             </button>
           </div>
 
-          {/* Search & Filter Bar */}
           <div className="flex items-center gap-2">
             <div className="relative flex-1">
               <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={15} />
@@ -987,7 +1039,6 @@ export default function AdminDashboardView({
             </select>
           </div>
 
-          {/* SOP Content List (SINGLE parent box, zero nested cards) */}
           <div className="bg-[#0A0A0C] rounded-2xl border border-white/10 divide-y divide-white/10 overflow-hidden">
             {filteredLessons.map((lesson) => (
               <div
@@ -1005,7 +1056,7 @@ export default function AdminDashboardView({
                     </span>
                   </div>
                   <h4 className="text-sm font-bold text-white truncate">{lesson.title}</h4>
-                  <p className="text-xs text-slate-400 line-clamp-1">{lesson.description}</p>
+                  <p className="text-xs text-[#8E8E93] line-clamp-1">{lesson.description}</p>
                 </div>
 
                 <div className="flex items-center gap-2 shrink-0">
@@ -1023,7 +1074,7 @@ export default function AdminDashboardView({
                       <Trash2 size={15} />
                     </button>
                   )}
-                  <ChevronRight size={16} className="text-slate-400" />
+                  <ChevronRight size={16} className="text-[#8E8E93]" />
                 </div>
               </div>
             ))}
@@ -1049,7 +1100,7 @@ export default function AdminDashboardView({
 
             <form onSubmit={handleAddUser} className="space-y-3">
               <div>
-                <label className="text-xs text-slate-400 block mb-1">Full Name</label>
+                <label className="text-xs text-[#8E8E93] block mb-1">Full Name</label>
                 <input
                   type="text"
                   required
@@ -1061,7 +1112,7 @@ export default function AdminDashboardView({
               </div>
 
               <div>
-                <label className="text-xs text-slate-400 block mb-1">Email Address</label>
+                <label className="text-xs text-[#8E8E93] block mb-1">Email Address</label>
                 <input
                   type="email"
                   placeholder="e.g. maya.l@org.internal"
@@ -1072,7 +1123,7 @@ export default function AdminDashboardView({
               </div>
 
               <div>
-                <label className="text-xs text-slate-400 block mb-1">Role</label>
+                <label className="text-xs text-[#8E8E93] block mb-1">Role</label>
                 <select
                   value={newUserRole}
                   onChange={(e) => setNewUserRole(e.target.value as any)}
@@ -1085,7 +1136,7 @@ export default function AdminDashboardView({
               </div>
 
               <div>
-                <label className="text-xs text-slate-400 block mb-1">Department</label>
+                <label className="text-xs text-[#8E8E93] block mb-1">Department</label>
                 <input
                   type="text"
                   placeholder="e.g. Housekeeping Services"
@@ -1099,7 +1150,7 @@ export default function AdminDashboardView({
                 <button
                   type="button"
                   onClick={() => setIsAddUserModalOpen(false)}
-                  className="px-4 py-2 rounded-xl border border-white/10 text-xs font-semibold text-slate-400 hover:text-white cursor-pointer"
+                  className="px-4 py-2 rounded-xl border border-white/10 text-xs font-semibold text-[#8E8E93] hover:text-white cursor-pointer"
                 >
                   Cancel
                 </button>
@@ -1130,7 +1181,7 @@ export default function AdminDashboardView({
             <div className="pt-2 flex items-center justify-end gap-2">
               <button
                 onClick={() => setUserToDelete(null)}
-                className="px-4 py-2 rounded-xl border border-white/10 text-xs font-semibold text-slate-400 hover:text-white cursor-pointer"
+                className="px-4 py-2 rounded-xl border border-white/10 text-xs font-semibold text-[#8E8E93] hover:text-white cursor-pointer"
               >
                 Cancel
               </button>
