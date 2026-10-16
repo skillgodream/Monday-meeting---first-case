@@ -1,0 +1,448 @@
+{
+  "library": {
+    "name": "Guruji Real Photo Visual Library 500 (Master Synced)",
+    "version": "3.0",
+    "asset_count": 31,
+    "format": "WebP",
+    "dimensions": "Various",
+    "quality": 80,
+    "categories": {
+      "generic_actions": 31
+    }
+  },
+  "assets": [
+    {
+      "id": "001_retail_store_front",
+      "file": "001_retail_store_front.webp",
+      "tags": [
+        "retail",
+        "store",
+        "front"
+      ],
+      "category": "generic_actions",
+      "width": 320,
+      "height": 240,
+      "size_bytes": 11550,
+      "source_generated": true
+    },
+    {
+      "id": "002_retail_cashier_scanning_product",
+      "file": "002_retail_cashier_scanning_product.webp",
+      "tags": [
+        "retail",
+        "cashier",
+        "scanning",
+        "product"
+      ],
+      "category": "generic_actions",
+      "width": 320,
+      "height": 240,
+      "size_bytes": 10134,
+      "source_generated": true
+    },
+    {
+      "id": "003_retail_shelf_restocking",
+      "file": "003_retail_shelf_restocking.webp",
+      "tags": [
+        "retail",
+        "shelf",
+        "restocking"
+      ],
+      "category": "generic_actions",
+      "width": 320,
+      "height": 240,
+      "size_bytes": 8750,
+      "source_generated": true
+    },
+    {
+      "id": "004_warehouse_packing_box",
+      "file": "004_warehouse_packing_box.webp",
+      "tags": [
+        "warehouse",
+        "packing",
+        "box"
+      ],
+      "category": "generic_actions",
+      "width": 320,
+      "height": 240,
+      "size_bytes": 8082,
+      "source_generated": true
+    },
+    {
+      "id": "005_warehouse_inventory_check",
+      "file": "005_warehouse_inventory_check.webp",
+      "tags": [
+        "warehouse",
+        "inventory",
+        "check"
+      ],
+      "category": "generic_actions",
+      "width": 320,
+      "height": 240,
+      "size_bytes": 9614,
+      "source_generated": true
+    },
+    {
+      "id": "006_warehouse_pallet_jack",
+      "file": "006_warehouse_pallet_jack.webp",
+      "tags": [
+        "warehouse",
+        "pallet",
+        "jack"
+      ],
+      "category": "generic_actions",
+      "width": 320,
+      "height": 240,
+      "size_bytes": 9528,
+      "source_generated": true
+    },
+    {
+      "id": "007_logistics_receiving_goods",
+      "file": "007_logistics_receiving_goods.webp",
+      "tags": [
+        "logistics",
+        "receiving",
+        "goods"
+      ],
+      "category": "generic_actions",
+      "width": 320,
+      "height": 240,
+      "size_bytes": 9752,
+      "source_generated": true
+    },
+    {
+      "id": "008_logistics_forklift_operation",
+      "file": "008_logistics_forklift_operation.webp",
+      "tags": [
+        "logistics",
+        "forklift",
+        "operation"
+      ],
+      "category": "generic_actions",
+      "width": 320,
+      "height": 240,
+      "size_bytes": 12888,
+      "source_generated": true
+    },
+    {
+      "id": "009_hospitality_room_cleaning",
+      "file": "009_hospitality_room_cleaning.webp",
+      "tags": [
+        "hospitality",
+        "room",
+        "cleaning"
+      ],
+      "category": "generic_actions",
+      "width": 320,
+      "height": 240,
+      "size_bytes": 7944,
+      "source_generated": true
+    },
+    {
+      "id": "010_hospitality_bed_making",
+      "file": "010_hospitality_bed_making.webp",
+      "tags": [
+        "hospitality",
+        "bed",
+        "making"
+      ],
+      "category": "generic_actions",
+      "width": 320,
+      "height": 240,
+      "size_bytes": 6434,
+      "source_generated": true
+    },
+    {
+      "id": "011_hospitality_food_preparation",
+      "file": "011_hospitality_food_preparation.webp",
+      "tags": [
+        "hospitality",
+        "food",
+        "preparation"
+      ],
+      "category": "generic_actions",
+      "width": 320,
+      "height": 240,
+      "size_bytes": 11614,
+      "source_generated": true
+    },
+    {
+      "id": "012_hospitality_handwashing",
+      "file": "012_hospitality_handwashing.webp",
+      "tags": [
+        "hospitality",
+        "handwashing"
+      ],
+      "category": "generic_actions",
+      "width": 320,
+      "height": 240,
+      "size_bytes": 8500,
+      "source_generated": true
+    },
+    {
+      "id": "013_healthcare_patient_check",
+      "file": "013_healthcare_patient_check.webp",
+      "tags": [
+        "healthcare",
+        "patient",
+        "check"
+      ],
+      "category": "generic_actions",
+      "width": 320,
+      "height": 240,
+      "size_bytes": 10910,
+      "source_generated": true
+    },
+    {
+      "id": "014_healthcare_medication_prep",
+      "file": "014_healthcare_medication_prep.webp",
+      "tags": [
+        "healthcare",
+        "medication",
+        "prep"
+      ],
+      "category": "generic_actions",
+      "width": 320,
+      "height": 240,
+      "size_bytes": 9322,
+      "source_generated": true
+    },
+    {
+      "id": "015_healthcare_sharps_disposal",
+      "file": "015_healthcare_sharps_disposal-1.webp",
+      "tags": [
+        "healthcare",
+        "sharps",
+        "disposal"
+      ],
+      "category": "generic_actions",
+      "width": 320,
+      "height": 240,
+      "size_bytes": 6174,
+      "source_generated": true
+    },
+    {
+      "id": "016_manufacturing_machine_operation",
+      "file": "016_manufacturing_machine_operation.webp",
+      "tags": [
+        "manufacturing",
+        "machine",
+        "operation"
+      ],
+      "category": "generic_actions",
+      "width": 320,
+      "height": 240,
+      "size_bytes": 11806,
+      "source_generated": true
+    },
+    {
+      "id": "017_manufacturing_quality_check",
+      "file": "017_manufacturing_quality_check.webp",
+      "tags": [
+        "manufacturing",
+        "quality",
+        "check"
+      ],
+      "category": "generic_actions",
+      "width": 320,
+      "height": 240,
+      "size_bytes": 8440,
+      "source_generated": true
+    },
+    {
+      "id": "018_maintenance_repair",
+      "file": "018_maintenance_repair.webp",
+      "tags": [
+        "maintenance",
+        "repair"
+      ],
+      "category": "generic_actions",
+      "width": 320,
+      "height": 240,
+      "size_bytes": 12244,
+      "source_generated": true
+    },
+    {
+      "id": "019_finance_report_preparation",
+      "file": "019_finance_report_preparation.webp",
+      "tags": [
+        "finance",
+        "report",
+        "preparation"
+      ],
+      "category": "generic_actions",
+      "width": 320,
+      "height": 240,
+      "size_bytes": 10342,
+      "source_generated": true
+    },
+    {
+      "id": "020_finance_invoice_processing",
+      "file": "020_finance_invoice_processing.webp",
+      "tags": [
+        "finance",
+        "invoice",
+        "processing"
+      ],
+      "category": "generic_actions",
+      "width": 320,
+      "height": 240,
+      "size_bytes": 8384,
+      "source_generated": true
+    },
+    {
+      "id": "021_hr_employee_records",
+      "file": "021_hr_employee_records.webp",
+      "tags": [
+        "hr",
+        "employee",
+        "records"
+      ],
+      "category": "generic_actions",
+      "width": 320,
+      "height": 240,
+      "size_bytes": 9036,
+      "source_generated": true
+    },
+    {
+      "id": "022_hr_recruitment_interview",
+      "file": "022_hr_recruitment_interview.webp",
+      "tags": [
+        "hr",
+        "recruitment",
+        "interview"
+      ],
+      "category": "generic_actions",
+      "width": 320,
+      "height": 240,
+      "size_bytes": 7504,
+      "source_generated": true
+    },
+    {
+      "id": "023_safety_ppe_equipment",
+      "file": "023_safety_ppe_equipment.webp",
+      "tags": [
+        "safety",
+        "ppe",
+        "equipment"
+      ],
+      "category": "generic_actions",
+      "width": 320,
+      "height": 240,
+      "size_bytes": 8912,
+      "source_generated": true
+    },
+    {
+      "id": "024_safety_fire_extinguisher",
+      "file": "024_safety_fire_extinguisher.webp",
+      "tags": [
+        "safety",
+        "fire",
+        "extinguisher"
+      ],
+      "category": "generic_actions",
+      "width": 320,
+      "height": 240,
+      "size_bytes": 3282,
+      "source_generated": true
+    },
+    {
+      "id": "025_safety_emergency_exit",
+      "file": "025_safety_emergency_exit.webp",
+      "tags": [
+        "safety",
+        "emergency",
+        "exit"
+      ],
+      "category": "generic_actions",
+      "width": 320,
+      "height": 240,
+      "size_bytes": 6470,
+      "source_generated": true
+    },
+    {
+      "id": "026_safety_spill_cleanup",
+      "file": "026_safety_spill_cleanup.webp",
+      "tags": [
+        "safety",
+        "spill",
+        "cleanup"
+      ],
+      "category": "generic_actions",
+      "width": 320,
+      "height": 240,
+      "size_bytes": 8526,
+      "source_generated": true
+    },
+    {
+      "id": "027_admin_document_filing",
+      "file": "027_admin_document_filing.webp",
+      "tags": [
+        "admin",
+        "document",
+        "filing"
+      ],
+      "category": "generic_actions",
+      "width": 320,
+      "height": 240,
+      "size_bytes": 8798,
+      "source_generated": true
+    },
+    {
+      "id": "028_admin_email_communication",
+      "file": "028_admin_email_communication.webp",
+      "tags": [
+        "admin",
+        "email",
+        "communication"
+      ],
+      "category": "generic_actions",
+      "width": 320,
+      "height": 240,
+      "size_bytes": 7970,
+      "source_generated": true
+    },
+    {
+      "id": "029_technology_qr_scan",
+      "file": "029_technology_qr_scan.webp",
+      "tags": [
+        "technology",
+        "qr",
+        "scan"
+      ],
+      "category": "generic_actions",
+      "width": 320,
+      "height": 240,
+      "size_bytes": 9178,
+      "source_generated": true
+    },
+    {
+      "id": "030_technology_system_login",
+      "file": "030_technology_system_login.webp",
+      "tags": [
+        "technology",
+        "system",
+        "login"
+      ],
+      "category": "generic_actions",
+      "width": 320,
+      "height": 240,
+      "size_bytes": 8016,
+      "source_generated": true
+    },
+    {
+      "id": "generic_actions_015_healthcare_sharps_disposal",
+      "file": "015_healthcare_sharps_disposal.webp",
+      "tags": [
+        "healthcare",
+        "sharps",
+        "disposal"
+      ],
+      "category": "generic_actions",
+      "width": 320,
+      "height": 240,
+      "size_bytes": 6174,
+      "source_generated": true
+    }
+  ]
+}

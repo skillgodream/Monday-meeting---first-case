@@ -1,0 +1,8 @@
+{
+  "name": "Remix Clean Depth Learning App",
+  "description": "A premium learning application using the Clean Depth design system.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
