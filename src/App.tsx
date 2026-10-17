@@ -793,14 +793,28 @@ export default function App() {
             </main>
           )}
 
-          {/* Floating Bottom Navigation Bar (Only on user/learner pages) */}
-          {currentUserRole === 'learn' && !showGurujiHome && (
+          {/* Back button for navigation on top left */}
+          {activeTab !== 'home' && !selectedLesson && (
+            <button
+              onClick={() => {
+                sounds.playTap();
+                setActiveTab('home');
+                setShowGurujiHome(true);
+              }}
+              className="fixed top-4 left-4 z-40 p-2 rounded-full bg-slate-900/50 backdrop-blur-md text-white border border-white/10"
+            >
+              <ChevronRight className="rotate-180" size={20} />
+            </button>
+          )}
+
+          {/* Floating Bottom Navigation Bar (Only on learner specific pages, hide during lessons/home) */}
+          {currentUserRole === 'learn' && !selectedLesson && (activeTab === 'library' || activeTab === 'progress' || activeTab === 'profile') && (
             <BottomNav
               activeTab={activeTab}
               onSelectTab={(tab) => {
                 sounds.playTap();
                 setActiveTab(tab);
-                setShowGurujiHome(false);
+                setShowGurujiHome(tab === 'home');
               }}
               role={currentUserRole}
               onOpenRoleSwitcher={() => setIsRoleModalOpen(true)}
@@ -976,10 +990,10 @@ export default function App() {
             sounds.playTap();
             setIsGyanModalOpen(true);
           }}
-          className="fixed bottom-24 right-5 z-40 px-4 py-2.5 rounded-full bg-black text-white hover:bg-slate-800 font-bold text-xs shadow-2xl border border-white/20 flex items-center gap-2 transition-all hover:scale-105 active:scale-95 cursor-pointer"
+          className="fixed bottom-24 right-5 z-40 px-4 py-2.5 rounded-full bg-blue-600 text-white hover:bg-blue-700 font-bold text-xs shadow-2xl border border-white/20 flex items-center gap-2 transition-all hover:scale-105 active:scale-95 cursor-pointer"
           title="Ask Gyan AI Work Companion"
         >
-          <Sparkles className="w-4 h-4 text-indigo-400 animate-pulse" />
+          <Sparkles className="w-4 h-4 text-white animate-pulse" />
           <span>Ask Gyan</span>
         </button>
       )}
