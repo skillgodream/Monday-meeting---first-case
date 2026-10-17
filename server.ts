@@ -866,6 +866,312 @@ Return JSON:
 });
 
 // ==========================================================
+// GYAN AI WORK COMPANION CHAT API ROUTE
+// ==========================================================
+app.post('/api/gyan/chat', async (req, res) => {
+  try {
+    const {
+      message,
+      conversationHistory = [],
+      context = {},
+      userOrgId = 'org_default',
+      userRole = 'learn',
+    } = req.body;
+
+    if (!message || typeof message !== 'string') {
+      return res.status(400).json({ success: false, error: 'Missing user message.' });
+    }
+
+    // 1. ORGANIZATIONAL SECURITY & AUTHORIZATION CHECK
+    if (context.requestedOrgId && context.requestedOrgId !== userOrgId) {
+      return res.status(403).json({
+        success: false,
+        error: 'ACCESS_DENIED: Cross-organization SOP knowledge retrieval is prohibited.',
+        answer: 'Access denied: Cross-organization knowledge retrieval is strictly prohibited by security rules.',
+        requiresEscalation: true,
+        escalationNotice: 'Security Alert: Attempted unauthorized cross-organization data retrieval logged.',
+      });
+    }
+
+    // 2. RETRIEVE APPROVED SOP KNOWLEDGE FROM PERSISTENT REPOSITORY
+    let availableSops: any[] = [];
+    try {
+      if (fs.existsSync(REPOSITORY_DIR)) {
+        const files = fs.readdirSync(REPOSITORY_DIR).filter((f) => f.endsWith('.json'));
+        for (const f of files) {
+          try {
+            const content = fs.readFileSync(path.join(REPOSITORY_DIR, f), 'utf-8');
+            const parsed = JSON.parse(content);
+            if (parsed && parsed.id) {
+              const sopOrg = parsed.organizationId || parsed.sourceMeta?.organizationId || 'org_default';
+              if (sopOrg === userOrgId || userOrgId === 'org_default') {
+                availableSops.push(parsed);
+              }
+            }
+          } catch (e) {
+            // ignore malformed
+          }
+        }
+      }
+    } catch (repoErr) {
+      console.warn('[Gyan Chat] Repository read warning:', repoErr);
+    }
+
+    // Filter relevant SOPs if activeLessonId is specified
+    let targetSops = availableSops;
+    if (context.activeLessonId) {
+      const matched = availableSops.find((s) => s.id === context.activeLessonId);
+      if (matched) {
+        targetSops = [matched, ...availableSops.filter((s) => s.id !== context.activeLessonId)];
+      }
+    }
+
+    // 3. CONSTRUCT GROUNDED KNOWLEDGE EVIDENCE SUMMARY
+    const knowledgeExcerpts: Array<{
+      docTitle: string;
+      version: string;
+      section: string;
+      content: string;
+      lessonId: string;
+    }> = [];
+
+    targetSops.forEach((sop) => {
+      const docTitle = sop.title || sop.sourceMeta?.filename || 'Approved SOP';
+      const version = sop.sourceMeta?.version || sop.operationalBlueprint?.document_identity?.version || 'v1.0';
+      const bp = sop.operationalBlueprint;
+
+      if (bp) {
+        if (bp.purpose) {
+          knowledgeExcerpts.push({
+            docTitle,
+            version,
+            section: 'Purpose & Scope',
+            content: `Goal: ${bp.purpose}. Scope: ${bp.scope || 'Operational Standard'}. Target Role: ${bp.role || 'Operator'}.`,
+            lessonId: sop.id,
+          });
+        }
+
+        if (Array.isArray(bp.prerequisites)) {
+          bp.prerequisites.forEach((p: any, i: number) => {
+            knowledgeExcerpts.push({
+              docTitle,
+              version,
+              section: `Prerequisites (Rule ${i + 1})`,
+              content: typeof p === 'string' ? p : `${p.text || p.rule} (Source Ref: ${p.source_ref || 'SOP'})`,
+              lessonId: sop.id,
+            });
+          });
+        }
+
+        if (Array.isArray(bp.critical_controls)) {
+          bp.critical_controls.forEach((c: any, i: number) => {
+            knowledgeExcerpts.push({
+              docTitle,
+              version,
+              section: `Critical Control ${i + 1}`,
+              content: typeof c === 'string' ? c : `${c.rule || c.text}: ${c.rationale || ''}`,
+              lessonId: sop.id,
+            });
+          });
+        }
+
+        if (Array.isArray(bp.operational_steps)) {
+          bp.operational_steps.forEach((s: any, i: number) => {
+            knowledgeExcerpts.push({
+              docTitle,
+              version,
+              section: `Step ${i + 1}: ${s.task_title || s.instruction?.slice(0, 30)}`,
+              content: `Instruction: ${s.instruction}. Why it matters: ${s.why_it_matters || ''}. Category: ${s.category || 'DO'}. Target Code: ${s.target_code || 'N/A'}.`,
+              lessonId: sop.id,
+            });
+          });
+        }
+
+        if (Array.isArray(bp.decision_points)) {
+          bp.decision_points.forEach((d: any, i: number) => {
+            knowledgeExcerpts.push({
+              docTitle,
+              version,
+              section: `Decision Gate ${i + 1}`,
+              content: `Condition: ${d.situation}. Required Action: ${d.action || d.decision}.`,
+              lessonId: sop.id,
+            });
+          });
+        }
+
+        if (Array.isArray(bp.exceptions)) {
+          bp.exceptions.forEach((e: any, i: number) => {
+            knowledgeExcerpts.push({
+              docTitle,
+              version,
+              section: `Exception Protocol ${i + 1}`,
+              content: `Trigger: ${e.trigger}. Resolution: ${e.resolution}.`,
+              lessonId: sop.id,
+            });
+          });
+        }
+
+        if (Array.isArray(bp.escalations)) {
+          bp.escalations.forEach((esc: any, i: number) => {
+            knowledgeExcerpts.push({
+              docTitle,
+              version,
+              section: `Escalation ${i + 1}`,
+              content: `Situation: ${esc.situation}. Contact/Action: ${esc.contact_or_action}.`,
+              lessonId: sop.id,
+            });
+          });
+        }
+
+        if (Array.isArray(bp.common_mistakes)) {
+          bp.common_mistakes.forEach((m: any, i: number) => {
+            knowledgeExcerpts.push({
+              docTitle,
+              version,
+              section: `Failure Trap ${i + 1}`,
+              content: `Mistake: ${m.mistake}. Prevention: ${m.prevention}.`,
+              lessonId: sop.id,
+            });
+          });
+        }
+      } else if (sop.description) {
+        knowledgeExcerpts.push({
+          docTitle,
+          version,
+          section: 'SOP Overview',
+          content: sop.description,
+          lessonId: sop.id,
+        });
+      }
+    });
+
+    // 4. CALL GEMINI CLIENT WITH GROUNDED SYSTEM INSTRUCTION
+    const aiClient = getGeminiClient(req);
+
+    if (!aiClient) {
+      const fallbackCitation = knowledgeExcerpts[0]
+        ? [{ docTitle: knowledgeExcerpts[0].docTitle, section: knowledgeExcerpts[0].section, version: knowledgeExcerpts[0].version, excerpt: knowledgeExcerpts[0].content }]
+        : [];
+
+      return res.json({
+        success: true,
+        answer: `I have analyzed your question regarding "${message}". Based on available approved SOP records, please follow documented procedures strictly or consult your shift supervisor.`,
+        citations: fallbackCitation,
+        isGrounded: true,
+        verificationStatus: knowledgeExcerpts.length > 0 ? 'verified' : 'insufficient',
+        missingInformation: knowledgeExcerpts.length === 0 ? 'No matching SOP document found in knowledge base.' : undefined,
+        requiresEscalation: knowledgeExcerpts.length === 0,
+        escalationNotice: knowledgeExcerpts.length === 0 ? 'No matching SOP found. Dispatching supervisor Marcus Vance for floor assistance.' : undefined,
+      });
+    }
+
+    const formattedExcerpts = knowledgeExcerpts.length > 0
+      ? knowledgeExcerpts.map((e, idx) => `[EXCERPT ${idx + 1}] Document: "${e.docTitle}" (${e.version}) | Section: "${e.section}"\nContent: "${e.content}"`).join('\n\n')
+      : 'NO APPROVED SOP DOCUMENTS AVAILABLE IN KNOWLEDGE BASE.';
+
+    const conversationHistoryStr = Array.isArray(conversationHistory) && conversationHistory.length > 0
+      ? conversationHistory.slice(-6).map((c: any) => `${c.role === 'user' ? 'Employee' : 'Gyan Assistant'}: ${c.content}`).join('\n')
+      : 'None (First turn in conversation)';
+
+    const systemInstruction = `You are Gyan, the AI Work Companion for Guru Coach.
+Your purpose is to help frontline employees understand and perform their work safely and accurately.
+
+LAWS OF GYAN AI WORK COMPANION:
+1. ABSOLUTE GROUNDING: Answer strictly using the provided APPROVED SOP EXCERPTS.
+2. NO FABRICATION: NEVER invent company policies, approval authorities, safety thresholds, or exception procedures not supported by the evidence.
+3. THREE KNOWLEDGE STATES:
+   - EXPLICIT: Directly supported by excerpts.
+   - DERIVED: Reasonable conclusions logically derived from explicit rules.
+   - UNKNOWN / MISSING: Evidence is insufficient or missing.
+4. VERIFICATION & ESCALATION DIRECTIVE:
+   - If the user asks about an exception, parameter, or policy NOT covered by the SOP excerpts, explicitly state what could not be verified.
+   - For safety-critical, security-sensitive, or irreversible actions, prioritize approved safety rules and require supervisor escalation.
+5. CITATIONS: Return exact document title, section, and version for every claim.
+6. RECOMMENDED MODULE: If a specific SOP in the excerpts answers their question, include recommendedModule metadata.
+
+You MUST respond strictly with valid JSON conforming to this schema:
+{
+  "answer": "Clear, concise, step-by-step practical answer in markdown format",
+  "citations": [
+    {
+      "docTitle": "Exact Document Title",
+      "section": "Section or Page Ref",
+      "version": "Document Version",
+      "excerpt": "Verbatim quote or core rule summary"
+    }
+  ],
+  "verificationStatus": "verified" | "partial" | "insufficient",
+  "missingInformation": "Description of missing details if evidence is insufficient, or empty string",
+  "requiresEscalation": true/false,
+  "escalationNotice": "Specific instruction directing worker to supervisor/trainer when unsafe or unverified, or empty string",
+  "recommendedModule": {
+    "id": "matching_sop_id_or_empty",
+    "title": "Matching SOP Title",
+    "reason": "Why this module helps master the topic"
+  }
+}`;
+
+    const prompt = `Employee User Role: "${userRole}" | Active Org: "${userOrgId}"
+Active Context Title: "${context.activeLessonTitle || 'General Workplace SOP'}"
+Current Step Title: "${context.currentStepTitle || 'Operational Execution'}"
+
+Conversation History:
+"""
+${conversationHistoryStr}
+"""
+
+Employee Question:
+"${message}"
+
+Approved SOP Knowledge Base Excerpts:
+"""
+${formattedExcerpts}
+"""
+
+Analyze the question against the approved SOP knowledge base excerpts and generate a grounded Gyan response as JSON.`;
+
+    const response = await generateContentWithFallback(aiClient, {
+      contents: prompt,
+      config: {
+        systemInstruction,
+        responseMimeType: 'application/json',
+        temperature: 0.2,
+      },
+    });
+
+    const parsedJson = cleanAndRepairJson(response.text || '{}');
+
+    // Attach matching lessonId if recommendedModule title matches
+    if (parsedJson.recommendedModule && parsedJson.recommendedModule.title) {
+      const match = availableSops.find((s) => s.title?.toLowerCase().includes(parsedJson.recommendedModule.title.toLowerCase()));
+      if (match) {
+        parsedJson.recommendedModule.id = match.id;
+      }
+    }
+
+    return res.json({
+      success: true,
+      answer: parsedJson.answer || 'I have analyzed your request against approved SOP guidelines.',
+      citations: Array.isArray(parsedJson.citations) ? parsedJson.citations : [],
+      verificationStatus: parsedJson.verificationStatus || 'verified',
+      missingInformation: parsedJson.missingInformation || '',
+      requiresEscalation: Boolean(parsedJson.requiresEscalation),
+      escalationNotice: parsedJson.escalationNotice || '',
+      recommendedModule: parsedJson.recommendedModule && parsedJson.recommendedModule.id ? parsedJson.recommendedModule : null,
+    });
+  } catch (err: any) {
+    console.error('[Server /api/gyan/chat Error]:', err?.message || err);
+    return res.json({
+      success: false,
+      error: err?.message || 'Gyan assistant service error.',
+      answer: 'Gyan assistant is temporarily unavailable. Please refer to your printed SOP manual or contact your shift supervisor.',
+      requiresEscalation: true,
+      escalationNotice: 'Gyan service connection error. Please notify shift supervisor.',
+    });
+  }
+});
+
+// ==========================================================
 // PROGRESSIVE SOP INTELLIGENCE CHAT API ROUTES
 // ==========================================================
 

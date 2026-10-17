@@ -10,7 +10,7 @@
     "clean": "rm -rf dist server.js",
     "design-lint": "node scripts/design-lint.js",
     "lint": "tsc --noEmit",
-    "test": "tsx src/utils/progressiveSopChat.test.ts && tsx src/utils/videoPlanEngine.test.ts && tsx src/experiment/knowItPlanner.test.ts && tsx src/utils/endToEndIntegrationTest.ts && tsx src/utils/architectureRegression.test.ts && tsx src/utils/housekeepingAcceptanceTest.ts && tsx src/services/imageGenerationService.test.ts && tsx src/utils/organizationAcceptanceTest.ts"
+    "test": "tsx src/utils/progressiveSopChat.test.ts && tsx src/utils/videoPlanEngine.test.ts && tsx src/experiment/knowItPlanner.test.ts && tsx src/utils/endToEndIntegrationTest.ts && tsx src/utils/architectureRegression.test.ts && tsx src/utils/housekeepingAcceptanceTest.ts && tsx src/services/imageGenerationService.test.ts && tsx src/utils/organizationAcceptanceTest.ts && tsx src/utils/gyanAcceptanceTest.ts"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",

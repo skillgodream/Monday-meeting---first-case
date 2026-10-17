@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Slide } from '../types';
-import { ArrowRight, Check, X, HelpCircle, AlertCircle } from 'lucide-react';
+import { Layers, CheckCircle2, AlertTriangle, ShieldCheck, ArrowRight } from 'lucide-react';
+import { findBestVisualMatch } from '../../utils/visualLibraryMatcher';
 
 /** Strips backend metadata, category badges, and description text from option cards */
 function cleanOptionText(rawText: string): string {
@@ -30,12 +31,18 @@ function cleanOptionText(rawText: string): string {
   return text;
 }
 
-export const DecisionPage: React.FC<{
+export interface DecisionPageProps {
   slide: Slide;
   onChoiceSelect: (isCorrect: boolean, feedback: string) => void;
   feedback?: string | null;
   onNext?: () => void;
-}> = ({ slide, onChoiceSelect, onNext }) => {
+}
+
+export const DecisionPage: React.FC<DecisionPageProps> = ({
+  slide,
+  onChoiceSelect,
+  onNext,
+}) => {
   // Extract options from slide
   const options = (slide.opts || []).length > 0
     ? (slide.opts || []).map((o) => ({
@@ -54,8 +61,14 @@ export const DecisionPage: React.FC<{
   const [isCorrect, setIsCorrect] = useState<boolean>(false);
   const [feedbackText, setFeedbackText] = useState<string>('');
 
+  // Fallback high-resolution visual matching
+  const photoUrl =
+    slide.img ||
+    findBestVisualMatch(slide.title || 'operational decision', slide.tag || 'SOP').url ||
+    '/Guruji_Real_Photo_Visual_Library_500/001_retail_store_front.webp';
+
   const handleSelect = (index: number) => {
-    // If already checked and solved, don't allow changing
+    // If already checked and solved correct, don't allow changing
     if (isChecked && isCorrect) return;
 
     setSelectedIndex(index);
@@ -95,71 +108,74 @@ export const DecisionPage: React.FC<{
   };
 
   return (
-    <div className="h-full overflow-y-auto flex flex-col gap-4 select-none pb-4 px-1">
-      {/* 1. TOP HERO CARD with integrated Question Icon */}
-      <div className="bg-gradient-to-r from-[#0a1e4a] via-[#0e2760] to-[#122b68] border border-blue-500/30 rounded-2xl sm:rounded-[22px] p-5 shadow-[0_8px_30px_rgba(10,30,74,0.35)] relative overflow-hidden flex items-center justify-between gap-3 text-left">
-        {/* Subtle top specular glass highlight */}
-        <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-blue-400/30 to-transparent pointer-events-none" />
-        <div className="absolute right-0 top-0 w-32 h-32 bg-sky-500/10 rounded-full blur-2xl pointer-events-none" />
+    <div className="h-full overflow-y-auto flex flex-col gap-4 select-none pb-4 px-1 bg-[#FBFBFD] text-slate-900">
+      
+      {/* 1. BENTO HEADER SYSTEM */}
+      <div className="space-y-1.5 text-left">
+        {/* Row 1: Two Capsule Badges */}
+        <div className="flex items-center gap-2">
+          {/* Left Pill: Solid black capsule */}
+          <span className="bg-black text-white text-[11px] font-bold rounded-full uppercase tracking-wide px-3.5 py-1 shadow-sm">
+            {slide.tag || 'OPERATIONAL DECISION GATE'}
+          </span>
 
-        {/* Heading: What should you Do? */}
-        <div className="flex-1 min-w-0 z-10">
-          <div className="text-[11px] font-black uppercase tracking-wider text-sky-400 mb-1">
-            {slide.tag || 'DECISION POINT'}
-          </div>
-          <h2 className="text-xl sm:text-2xl font-extrabold tracking-tight leading-tight text-white">
-            {slide.title || 'What should you do?'}
-          </h2>
+          {/* Right Pill: Neutral grey layout badge */}
+          <span className="bg-[#F1F3F5] text-slate-600 font-mono text-[10px] font-semibold border border-slate-200/90 rounded-full px-3 py-1 flex items-center gap-1.5">
+            <Layers className="w-3 h-3 text-slate-500" />
+            <span>LAYOUT: BENTO_DECISION</span>
+          </span>
         </div>
 
-        {/* Question Mark Badge inside the Hero Card */}
-        <div className="w-12 h-12 rounded-full border border-blue-400/40 bg-blue-900/30 flex items-center justify-center shrink-0 shadow-[0_0_15px_rgba(56,189,248,0.25)] text-sky-400 z-10">
-          <HelpCircle className="w-6 h-6 text-sky-400" />
+        {/* Row 2: Prominent Oversized Heading */}
+        <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight leading-tight mt-1">
+          {slide.title || 'What is the Compliant Operational Decision?'}
+        </h1>
+
+        {/* Row 3: Context Subtitle */}
+        <p className="text-xs sm:text-sm text-slate-500 font-normal mt-1 leading-relaxed">
+          {slide.content ||
+            'Evaluate live operational conditions against documented SOP standard rules. Zero unapproved improvisation permitted.'}
+        </p>
+      </div>
+
+      {/* 2. SCENARIO TELEMETRY PHOTO CARD (Workplace Visual Anchor) */}
+      <div className="rounded-3xl overflow-hidden border border-slate-200/90 shadow-sm relative h-44 sm:h-52 w-full shrink-0">
+        <img
+          src={photoUrl}
+          alt={slide.title || 'Decision context visual'}
+          referrerPolicy="no-referrer"
+          className="w-full h-full object-cover transition-opacity duration-300"
+        />
+        <div className="absolute bottom-3 left-3 bg-black/60 backdrop-blur-md border border-white/20 text-white text-[10px] font-mono font-bold px-3.5 py-1 rounded-full">
+          • TELEMETRY: Active Decision Boundary Evaluation
         </div>
       </div>
 
-      {/* Contextual Scenario / Instruction text */}
-      {slide.content && (
-        <div className="p-4 rounded-2xl bg-blue-950/40 border border-blue-900/40 text-left text-xs sm:text-sm text-slate-200 leading-relaxed font-medium">
-          {slide.content}
-        </div>
-      )}
-
-      {/* 2. IMAGE SLOT if available */}
-      {slide.img && (
-        <div className="relative aspect-[16/10] w-full max-h-[220px] rounded-2xl overflow-hidden bg-[#091326] border border-blue-900/40 shrink-0 shadow-sm">
-          <img
-            src={slide.img}
-            alt={slide.title || 'Decision context visual'}
-            referrerPolicy="no-referrer"
-            className="w-full h-full object-cover rounded-2xl transition-opacity duration-300"
-          />
-        </div>
-      )}
-
-      {/* 3. OPTIONS LIST or Controlled Explicit State */}
+      {/* 3. ELEVATED BENTO DECISION CARDS */}
       {options.length > 0 ? (
         <div className="flex flex-col gap-3">
           {options.map((opt, j) => {
             const isSelected = selectedIndex === j;
             const isThisCorrect = opt.isCorrect;
+            const optionLabel = `OPTION ${String.fromCharCode(65 + j)}`;
 
             let cardStyle =
-              'bg-[#091326] border border-blue-900/40 hover:border-blue-500/60';
+              'bg-white border border-slate-200/90 hover:border-slate-300 shadow-xs';
+
             if (!isChecked) {
               if (isSelected) {
                 cardStyle =
-                  'bg-[#0c1a36] border-2 border-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.25)]';
+                  'bg-slate-50/70 border-2 border-black shadow-md ring-1 ring-black/5';
               }
             } else {
               if (isThisCorrect) {
                 cardStyle =
-                  'bg-emerald-950/40 border-2 border-emerald-500 text-emerald-200 shadow-[0_0_15px_rgba(16,185,129,0.25)]';
+                  'bg-emerald-50/70 border-2 border-emerald-500 text-emerald-950 shadow-sm';
               } else if (isSelected && !isThisCorrect) {
                 cardStyle =
-                  'bg-rose-950/40 border-2 border-rose-500 text-rose-200 shadow-[0_0_15px_rgba(244,63,94,0.25)]';
+                  'bg-rose-50/70 border-2 border-rose-500 text-rose-950 shadow-sm';
               } else {
-                cardStyle = 'bg-[#091326]/60 border border-blue-950/40 opacity-50';
+                cardStyle = 'bg-white/60 border border-slate-200 opacity-40';
               }
             }
 
@@ -167,113 +183,101 @@ export const DecisionPage: React.FC<{
               <div
                 key={j}
                 onClick={() => handleSelect(j)}
-                className={`group rounded-2xl p-4 transition-all duration-200 flex items-center gap-4 cursor-pointer select-none ${cardStyle}`}
+                className={`bg-white rounded-3xl p-4 sm:p-5 border transition-all duration-200 cursor-pointer select-none space-y-2 text-left ${cardStyle}`}
               >
-                {/* Prominent Dot/Circle Radio Option Indicator */}
-                <div
-                  className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 transition-all duration-200 ${
-                    isChecked
-                      ? isThisCorrect
-                        ? 'border-emerald-400 bg-emerald-500/20 shadow-[0_0_10px_rgba(52,211,153,0.3)]'
-                        : isSelected
-                        ? 'border-rose-400 bg-rose-500/20 shadow-[0_0_10px_rgba(251,113,133,0.3)]'
-                        : 'border-slate-600/60 bg-slate-900/40'
-                      : isSelected
-                      ? 'border-sky-400 bg-sky-500/20 shadow-[0_0_10px_rgba(56,189,248,0.35)] scale-105'
-                      : 'border-slate-500/60 bg-slate-900/40 group-hover:border-sky-400/80 group-hover:bg-sky-500/10'
-                  }`}
-                >
-                  {isChecked ? (
-                    isThisCorrect ? (
-                      <div className="w-3 h-3 rounded-full bg-emerald-400 shadow-sm" />
-                    ) : isSelected ? (
-                      <div className="w-3 h-3 rounded-full bg-rose-400 shadow-sm" />
-                    ) : null
-                  ) : isSelected ? (
-                    <div className="w-3 h-3 rounded-full bg-sky-400 shadow-sm" />
-                  ) : (
-                    <div className="w-2 h-2 rounded-full bg-transparent group-hover:bg-sky-400/40 transition-all" />
-                  )}
+                {/* Card Top Row */}
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-mono tracking-widest text-slate-400 uppercase font-bold">
+                    {optionLabel}
+                  </span>
+
+                  {/* Dynamic Status Indicator Badge */}
+                  {!isChecked ? (
+                    isSelected && (
+                      <span className="bg-black text-white text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-full uppercase">
+                        SELECTED
+                      </span>
+                    )
+                  ) : isThisCorrect ? (
+                    <span className="bg-emerald-100 text-emerald-800 border border-emerald-300 text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-full uppercase flex items-center gap-1">
+                      <CheckCircle2 className="w-3 h-3 text-emerald-700" />
+                      <span>COMPLIANT STANDARD</span>
+                    </span>
+                  ) : isSelected && !isThisCorrect ? (
+                    <span className="bg-rose-100 text-rose-800 border border-rose-300 text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-full uppercase flex items-center gap-1">
+                      <AlertTriangle className="w-3 h-3 text-rose-700" />
+                      <span>PROHIBITED DEVIATION</span>
+                    </span>
+                  ) : null}
                 </div>
 
-                {/* Option Text (clean title only, no backend description/subtitle) */}
-                <span className="text-sm sm:text-base font-semibold text-white/95 flex-1 text-left leading-snug">
+                {/* Main Choice Title */}
+                <h3 className="text-base sm:text-lg font-bold text-slate-900 leading-snug">
                   {cleanOptionText(opt.text)}
-                </span>
-
-                {/* Evaluated Status Icon on right */}
-                {isChecked && (
-                  <div className="shrink-0 ml-1">
-                    {isThisCorrect ? (
-                      <div className="w-6 h-6 rounded-full bg-emerald-500/20 border border-emerald-400 text-emerald-300 flex items-center justify-center">
-                        <Check className="w-3.5 h-3.5 stroke-[3]" />
-                      </div>
-                    ) : isSelected ? (
-                      <div className="w-6 h-6 rounded-full bg-rose-500/20 border border-rose-400 text-rose-300 flex items-center justify-center">
-                        <X className="w-3.5 h-3.5 stroke-[3]" />
-                      </div>
-                    ) : null}
-                  </div>
-                )}
+                </h3>
               </div>
             );
           })}
         </div>
       ) : (
-        <div className="p-5 rounded-2xl bg-[#091326] border border-blue-900/40 text-left space-y-2">
-          <div className="flex items-center gap-2 text-sky-400 text-xs font-bold uppercase tracking-wider">
-            <AlertCircle className="w-4 h-4" />
-            <span>Procedural Standard</span>
+        <div className="bg-white rounded-3xl p-5 border border-slate-200/90 shadow-xs text-left space-y-2">
+          <div className="flex items-center gap-2 text-slate-800 text-xs font-mono font-bold uppercase tracking-wider">
+            <AlertTriangle className="w-4 h-4 text-amber-500" />
+            <span>PROCEDURAL STANDARD SPECIFICATION</span>
           </div>
-          <p className="text-sm font-semibold text-slate-200">
+          <p className="text-sm font-semibold text-slate-700">
             {slide.why || 'Review and apply the standard procedure outlined for this operational situation.'}
           </p>
         </div>
       )}
 
-      {/* 4. FEEDBACK / RATIONALE CARD */}
+      {/* 4. RATIONALE & FEEDBACK BENTO CARD */}
       {isChecked && feedbackText && (
         <div
-          className={`p-4 rounded-2xl border space-y-1 animate-in fade-in duration-200 ${
+          className={`p-4 sm:p-5 rounded-3xl border space-y-1.5 text-left animate-in fade-in duration-200 ${
             isCorrect
-              ? 'bg-emerald-950/40 border-emerald-500/40 text-emerald-200'
-              : 'bg-rose-950/40 border-rose-500/40 text-rose-200'
+              ? 'bg-emerald-50/80 border-emerald-300 text-emerald-950'
+              : 'bg-rose-50/80 border-rose-300 text-rose-950'
           }`}
         >
           <div
-            className={`text-xs font-black uppercase tracking-wider flex items-center gap-1.5 ${
-              isCorrect ? 'text-emerald-400' : 'text-rose-400'
+            className={`text-xs font-mono font-bold uppercase tracking-wider flex items-center gap-1.5 ${
+              isCorrect ? 'text-emerald-800' : 'text-rose-800'
             }`}
           >
-            <span>{isCorrect ? '✓' : '✕'}</span>
-            <span>{isCorrect ? 'Compliant Rationale' : 'Operational Caution'}</span>
+            {isCorrect ? (
+              <ShieldCheck className="w-4 h-4 text-emerald-700" />
+            ) : (
+              <AlertTriangle className="w-4 h-4 text-rose-700" />
+            )}
+            <span>{isCorrect ? 'Compliant SOP Rationale' : 'Operational Risk Warning'}</span>
           </div>
-          <p className="text-xs sm:text-sm leading-relaxed opacity-95">
+          <p className="text-xs sm:text-sm text-slate-800 leading-relaxed font-medium">
             {feedbackText}
           </p>
         </div>
       )}
 
-      {/* 5. CHECK ANSWER / CONTINUE ACTION BUTTON */}
+      {/* 5. PRIMARY ACTION BUTTON */}
       <button
         onClick={handleAction}
         disabled={options.length > 0 && selectedIndex === null}
-        className={`w-full py-4 px-6 rounded-2xl text-white font-bold text-base flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
+        className={`w-full py-4 px-6 rounded-full text-white font-bold text-sm sm:text-base flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
           isChecked && isCorrect
-            ? 'bg-gradient-to-r from-emerald-600 to-teal-500 shadow-[0_4px_25px_rgba(16,185,129,0.4)]'
-            : 'bg-gradient-to-r from-[#0066fe] to-[#1b8aff] shadow-[0_4px_25px_rgba(0,102,254,0.4)] hover:brightness-110 active:scale-[0.99]'
+            ? 'bg-emerald-600 hover:bg-emerald-700 shadow-lg shadow-emerald-600/20 active:scale-[0.99]'
+            : 'bg-black hover:bg-slate-800 shadow-md active:scale-[0.99]'
         }`}
       >
         <span>
           {options.length === 0
-            ? 'Continue'
+            ? 'Continue to Next Gate →'
             : isChecked && isCorrect
-            ? 'Continue'
-            : 'Check answer'}
+            ? 'Continue to Next Gate →'
+            : 'Confirm Decision →'}
         </span>
         <ArrowRight className="w-5 h-5 stroke-[2.5]" />
       </button>
+
     </div>
   );
 };
-

@@ -13,6 +13,7 @@ import WelcomeJourneyModal from './components/WelcomeJourneyModal';
 import { LearningJourneyModal } from './components/LearningJourneyModal';
 import ExperiencedCheckModal from './components/ExperiencedCheckModal';
 import AskTrainerModal from './components/AskTrainerModal';
+import GyanChatModal from './components/GyanChatModal';
 import MicroLessonSheet from './components/MicroLessonSheet';
 import LessonOverview from './components/LessonOverview';
 import SimulatorScreen from './components/SimulatorScreen';
@@ -130,6 +131,7 @@ export default function App() {
 
   // Omnipresent Stage Controls:
   const [isTrainerModalOpen, setIsTrainerModalOpen] = useState<boolean>(false);
+  const [isGyanModalOpen, setIsGyanModalOpen] = useState<boolean>(false);
   const [isMicroLessonOpen, setIsMicroLessonOpen] = useState<boolean>(false);
   const [currentContextTitle, setCurrentContextTitle] = useState<string>('Standard Operating Procedure');
 
@@ -965,6 +967,35 @@ export default function App() {
         isOpen={isTrainerModalOpen}
         onClose={() => setIsTrainerModalOpen(false)}
         currentStepTitle={currentContextTitle}
+      />
+
+      {/* Floating Gyan AI Work Companion Entry Point */}
+      {currentUserRole === 'learn' && (
+        <button
+          onClick={() => {
+            sounds.playTap();
+            setIsGyanModalOpen(true);
+          }}
+          className="fixed bottom-24 right-5 z-40 px-4 py-2.5 rounded-full bg-black text-white hover:bg-slate-800 font-bold text-xs shadow-2xl border border-white/20 flex items-center gap-2 transition-all hover:scale-105 active:scale-95 cursor-pointer"
+          title="Ask Gyan AI Work Companion"
+        >
+          <Sparkles className="w-4 h-4 text-indigo-400 animate-pulse" />
+          <span>Ask Gyan</span>
+        </button>
+      )}
+
+      {/* Gyan AI Work Companion Chat Modal */}
+      <GyanChatModal
+        isOpen={isGyanModalOpen}
+        onClose={() => setIsGyanModalOpen(false)}
+        activeLesson={selectedLesson || lessons[0]}
+        onSelectLesson={(lessonId) => handleSelectSop(lessonId)}
+        onCallTrainer={() => {
+          setIsGyanModalOpen(false);
+          setIsTrainerModalOpen(true);
+        }}
+        userRole={currentUserRole}
+        userOrgId="org_default"
       />
 
       {/* P0/P1/P2 Process Passport Trainer Review Modal */}
