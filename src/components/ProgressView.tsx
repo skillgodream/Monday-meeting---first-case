@@ -18,7 +18,8 @@ import {
   BrainCircuit,
   ChevronRight,
   FileText,
-  Settings
+  Settings,
+  GraduationCap
 } from 'lucide-react';
 import { Lesson } from '../types';
 import ClayArt from './ClayArt';
@@ -27,6 +28,7 @@ import { sounds } from '../utils/audio';
 interface ProgressViewProps {
   lessons: Lesson[];
   onStartSimulation: (lessonId: string) => void;
+  onOpenLearningJourney?: () => void;
 }
 
 type ArtType = 'scanner' | 'box' | 'tote' | 'safety' | 'clipboard' | 'trolley' | 'medal' | 'guru' | 'printer' | 'tape';
@@ -41,7 +43,7 @@ interface ProgressModuleItem {
   statusColor: string;
 }
 
-export default function ProgressView({ lessons, onStartSimulation }: ProgressViewProps) {
+export default function ProgressView({ lessons, onStartSimulation, onOpenLearningJourney }: ProgressViewProps) {
   // Main Sections (Module, Quiz, Others) - default null shows vertical cards stack
   const [activeSection, setActiveSection] = useState<'module' | 'quiz' | 'other' | null>(null);
 
@@ -289,6 +291,36 @@ export default function ProgressView({ lessons, onStartSimulation }: ProgressVie
           <RotateCcw size={16} />
           <span>Run Shift Readiness Drill</span>
         </button>
+      </div>
+
+      {/* Employee Learning Journey Card Banner */}
+      <div
+        onClick={() => {
+          sounds.playTap();
+          if (onOpenLearningJourney) onOpenLearningJourney();
+        }}
+        className="p-4 bg-[#0A0A0C] hover:bg-[#121215] rounded-[24px] border border-white/10 hover:border-white/20 flex items-center justify-between cursor-pointer transition-all active:scale-[0.99] shadow-xl group"
+      >
+        <div className="flex items-center gap-4 min-w-0">
+          <div className="w-12 h-12 rounded-full bg-white/10 border border-white/20 text-white flex items-center justify-center shrink-0 group-hover:scale-105 transition-all">
+            <GraduationCap size={20} />
+          </div>
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-white/10 text-white border border-white/20">
+                Career Roadmap
+              </span>
+              <span className="text-[10px] font-bold text-[#8E8E93]">3-Phase · 68%</span>
+            </div>
+            <h3 className="text-base sm:text-lg font-bold text-white tracking-tight mt-0.5">
+              Employee Learning Journey
+            </h3>
+            <p className="text-xs text-[#8E8E93] font-normal truncate mt-0.5">
+              New Hire Onboarding → Continuous Upskilling
+            </p>
+          </div>
+        </div>
+        <ChevronRight size={18} className="text-[#8E8E93] shrink-0 ml-2 group-hover:text-white group-hover:translate-x-0.5 transition-all" />
       </div>
 
       {/* 2. VERTICAL CARDS STACK (Module · Quiz · Others) OR SECTION ACTIVE HEADER */}

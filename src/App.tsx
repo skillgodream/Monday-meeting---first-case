@@ -10,6 +10,7 @@ import ScanModal from './components/ScanModal';
 import UploadModal from './components/UploadModal';
 import AiUnderstandModal from './components/AiUnderstandModal';
 import WelcomeJourneyModal from './components/WelcomeJourneyModal';
+import { LearningJourneyModal } from './components/LearningJourneyModal';
 import ExperiencedCheckModal from './components/ExperiencedCheckModal';
 import AskTrainerModal from './components/AskTrainerModal';
 import MicroLessonSheet from './components/MicroLessonSheet';
@@ -109,6 +110,7 @@ export default function App() {
   // Onboarding Journey States:
   const [welcomeLesson, setWelcomeLesson] = useState<Lesson | null>(null);
   const [isExperiencedCheckOpen, setIsExperiencedCheckOpen] = useState<boolean>(false);
+  const [isLearningJourneyOpen, setIsLearningJourneyOpen] = useState<boolean>(false);
   const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
 
   // Active Learning Mode States:
@@ -504,11 +506,16 @@ export default function App() {
             />
           ) : (
             <div className="max-w-lg mx-auto w-full">
-              <LibraryView
+              <HomeScreen
                 lessons={lessons}
-                onSelectLesson={(lesson) => {
-                  handleSelectSop(lesson.id, lesson.title);
-                }}
+                onScanClick={() => setIsScanOpen(true)}
+                onUploadClick={() => setIsUploadOpen(true)}
+                onSelectSop={handleSelectSop}
+                onExploreLibrary={() => setActiveTab('library')}
+                onOpenPassport={() => setIsPassportModalOpen(true)}
+                onShowGurujiWelcome={() => setShowGurujiHome(true)}
+                onOpenLearningJourney={() => setIsLearningJourneyOpen(true)}
+                userRole={currentUserRole}
               />
             </div>
           )}
@@ -666,6 +673,7 @@ export default function App() {
                   const found = lessons.find((l) => l.id === lessonId) || lessons[0];
                   handleSelectSop(found.id, found.title);
                 }}
+                onOpenLearningJourney={() => setIsLearningJourneyOpen(true)}
               />
             </main>
           )}
@@ -913,6 +921,15 @@ export default function App() {
         onClose={() => setIsPassportModalOpen(false)}
         onApprovePassport={(approved) => {
           setActivePassport(approved);
+        }}
+      />
+
+      {/* Employee Learning Journey Modal */}
+      <LearningJourneyModal
+        isOpen={isLearningJourneyOpen}
+        onClose={() => setIsLearningJourneyOpen(false)}
+        onStartSimulation={(lessonId) => {
+          handleSelectSop(lessonId);
         }}
       />
 
