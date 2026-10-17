@@ -11,6 +11,7 @@
  */
 
 import { ExperienceLevel } from '../types';
+import { saveLearnerToFirestore, saveAssignmentToFirestore, logAuditEvent } from '../services/firestorePersistence';
 
 export type GurujiReadinessState =
   | 'ready_for_supervised_practice'
@@ -445,6 +446,12 @@ export function getStoredPilotLearners(): PilotLearner[] {
 export function savePilotLearners(learners: PilotLearner[]): void {
   try {
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(learners));
+    // Asynchronously sync learners to Firestore database
+    if (Array.isArray(learners)) {
+      learners.forEach((learner) => {
+        saveLearnerToFirestore(learner).catch(console.error);
+      });
+    }
   } catch (e) {
     console.error('Failed to save pilot learners:', e);
   }
@@ -482,6 +489,23 @@ export function assignSopToLearner(
 
   learners.unshift(newLearner);
   savePilotLearners(learners);
+
+  // Sync assignment to Firestore
+  saveAssignmentToFirestore({
+    id: `assign_${Date.now()}`,
+    title: `SOP Assignment: ${sopTitle}`,
+    sopId,
+    sopTitle,
+    targetCohort: `${name} (${role})`,
+    department: domain,
+    location: 'Main Facility',
+    assignedBy: 'Manager',
+    assignedAt: new Date().toISOString(),
+    status: 'Active'
+  }).catch(console.error);
+
+  logAuditEvent('TRAINING_ASSIGNED', `Assigned '${sopTitle}' to ${name} (${role})`, 'manager_user', 'Manager').catch(console.error);
+
   return newLearner;
 }
 
@@ -497,6 +521,14 @@ export function recordSupervisorObservation(
   learners[idx].workplaceReadiness = record.finalDecision;
 
   savePilotLearners(learners);
+
+  logAuditEvent(
+    'SUPERVISOR_OBSERVATION_RECORDED',
+    `Supervisor ${record.supervisorName} recorded decision '${record.finalDecision}' for learner ${learners[idx].name}`,
+    record.supervisorName,
+    'Supervisor'
+  ).catch(console.error);
+
   return learners[idx];
 }
 

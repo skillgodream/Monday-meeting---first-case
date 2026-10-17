@@ -252,7 +252,7 @@ export default function ProgressView({ lessons, onStartSimulation, onOpenLearnin
           </div>
         </div>
 
-        {/* 5-Metrics Row (Pure Black & White, No Card Nesting, Un-truncated Small Labels) */}
+        {/* 5-Metrics Row */}
         <div className="grid grid-cols-5 gap-1 text-center pt-3 border-t border-white/10">
           <div className="flex flex-col items-center justify-center py-1 px-0.5">
             <span className="text-lg font-black font-mono text-white leading-none">{totalAssigned}</span>
@@ -279,18 +279,6 @@ export default function ProgressView({ lessons, onStartSimulation, onOpenLearnin
             <span className="text-[9px] font-medium text-slate-300 leading-tight mt-1">Delayed</span>
           </div>
         </div>
-
-        {/* Action Button */}
-        <button
-          onClick={() => {
-            sounds.playTap();
-            onStartSimulation('picking-101');
-          }}
-          className="w-full h-11 rounded-xl bg-white text-black font-bold text-xs sm:text-sm flex items-center justify-center gap-2 hover:bg-slate-100 active:scale-98 transition-all cursor-pointer shadow-md"
-        >
-          <RotateCcw size={16} />
-          <span>Run Shift Readiness Drill</span>
-        </button>
       </div>
 
       {/* Employee Learning Journey Card Banner */}
@@ -302,21 +290,15 @@ export default function ProgressView({ lessons, onStartSimulation, onOpenLearnin
         className="p-4 bg-[#0A0A0C] hover:bg-[#121215] rounded-[24px] border border-white/10 hover:border-white/20 flex items-center justify-between cursor-pointer transition-all active:scale-[0.99] shadow-xl group"
       >
         <div className="flex items-center gap-4 min-w-0">
-          <div className="w-12 h-12 rounded-full bg-white/10 border border-white/20 text-white flex items-center justify-center shrink-0 group-hover:scale-105 transition-all">
+          <div className="w-12 h-12 rounded-full bg-white/10 border border-white/20 text-sky-400 flex items-center justify-center shrink-0 group-hover:scale-105 transition-all">
             <GraduationCap size={20} />
           </div>
           <div className="min-w-0">
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-white/10 text-white border border-white/20">
-                Career Roadmap
-              </span>
-              <span className="text-[10px] font-bold text-[#8E8E93]">3-Phase · 68%</span>
-            </div>
-            <h3 className="text-base sm:text-lg font-bold text-white tracking-tight mt-0.5">
+            <h3 className="text-base sm:text-lg font-bold text-sky-400 tracking-tight">
               Employee Learning Journey
             </h3>
             <p className="text-xs text-[#8E8E93] font-normal truncate mt-0.5">
-              New Hire Onboarding → Continuous Upskilling
+              Onboarding → Continuous Learning → Upskilling
             </p>
           </div>
         </div>

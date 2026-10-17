@@ -36,6 +36,7 @@ import {
 import { Lesson } from '../types';
 import { INITIAL_LESSONS } from '../data/lessonsData';
 import { sounds } from '../utils/audio';
+import { saveQuizToFirestore, logAuditEvent, deleteSopFromFirestore, getAuditLogs, AuditLogEntry } from '../services/firestorePersistence';
 
 interface AdminDashboardViewProps {
   lessons: Lesson[];
@@ -127,6 +128,16 @@ export default function AdminDashboardView({
   onBackToHome,
 }: AdminDashboardViewProps) {
   const [activeViewMode, setActiveViewMode] = useState<AdminViewMode>('landing');
+  const [liveAuditLogs, setLiveAuditLogs] = useState<AuditLogEntry[]>([]);
+
+  // Load live audit logs from Firestore database
+  React.useEffect(() => {
+    getAuditLogs().then((logs) => {
+      if (Array.isArray(logs) && logs.length > 0) {
+        setLiveAuditLogs(logs);
+      }
+    }).catch(console.error);
+  }, [activeViewMode]);
 
   // Ensure scroll top on mode switch
   React.useEffect(() => {
@@ -275,6 +286,7 @@ export default function AdminDashboardView({
     const newQuiz = {
       id: `quiz_${Date.now()}`,
       title: titleToUse,
+      sopId: 'general_ops',
       questionType: quizQuestionType,
       numQuestions: sampleQuestions.length,
       passingScore: quizPassingScore,
@@ -282,8 +294,11 @@ export default function AdminDashboardView({
       questions: sampleQuestions
     };
 
+    saveQuizToFirestore(newQuiz).catch(console.error);
+    logAuditEvent('QUIZ_CREATED', `Admin generated quiz '${newQuiz.title}' with ${sampleQuestions.length} questions`, 'admin_user', 'System Admin');
+
     setCreatedQuizResult(newQuiz);
-    showToast(`Quiz '${newQuiz.title}' created successfully!`);
+    showToast(`Quiz '${newQuiz.title}' created & saved to database!`);
   };
 
   // Toast State
@@ -459,7 +474,7 @@ export default function AdminDashboardView({
               }}
               className="px-3 py-1.5 rounded-xl bg-[#1C1C1E] hover:bg-[#2C2C2E] border border-white/10 text-white text-xs font-medium cursor-pointer transition-all"
             >
-              Frontline
+              Back
             </button>
           )}
 
@@ -644,44 +659,52 @@ export default function AdminDashboardView({
             </div>
 
             <div className="bg-[#0A0A0C] rounded-2xl border border-white/10 divide-y divide-white/10 overflow-hidden">
-              <div className="p-4 flex items-center justify-between gap-3">
-                <div className="flex items-center gap-3.5 min-w-0">
-                  <div className="w-9 h-9 rounded-full bg-[#1C1C1E] text-white flex items-center justify-center shrink-0 border border-white/10">
-                    <FileText size={16} />
+              {liveAuditLogs.length > 0 ? (
+                liveAuditLogs.slice(0, 5).map((log, idx) => (
+                  <div key={log.id || idx} className="p-4 flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3.5 min-w-0">
+                      <div className="w-9 h-9 rounded-full bg-[#1C1C1E] text-white flex items-center justify-center shrink-0 border border-white/10">
+                        <FileText size={16} />
+                      </div>
+                      <div className="min-w-0">
+                        <h5 className="text-xs sm:text-sm font-bold text-white truncate">{log.action.replace(/_/g, ' ')}</h5>
+                        <p className="text-[11px] text-[#8E8E93] truncate mt-0.5">{log.details}</p>
+                      </div>
+                    </div>
+                    <span className="text-[10px] font-mono text-[#8E8E93] shrink-0">
+                      {log.timestamp ? new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Just now'}
+                    </span>
                   </div>
-                  <div className="min-w-0">
-                    <h5 className="text-xs sm:text-sm font-bold text-white truncate">New SOP uploaded</h5>
-                    <p className="text-[11px] text-[#8E8E93] truncate mt-0.5">Aircraft Turnaround Safety SOP</p>
+                ))
+              ) : (
+                <>
+                  <div className="p-4 flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3.5 min-w-0">
+                      <div className="w-9 h-9 rounded-full bg-[#1C1C1E] text-white flex items-center justify-center shrink-0 border border-white/10">
+                        <FileText size={16} />
+                      </div>
+                      <div className="min-w-0">
+                        <h5 className="text-xs sm:text-sm font-bold text-white truncate">New SOP uploaded</h5>
+                        <p className="text-[11px] text-[#8E8E93] truncate mt-0.5">Aircraft Turnaround Safety SOP</p>
+                      </div>
+                    </div>
+                    <span className="text-[11px] font-mono text-[#8E8E93] shrink-0">2h ago</span>
                   </div>
-                </div>
-                <span className="text-[11px] font-mono text-[#8E8E93] shrink-0">2h ago</span>
-              </div>
 
-              <div className="p-4 flex items-center justify-between gap-3">
-                <div className="flex items-center gap-3.5 min-w-0">
-                  <div className="w-9 h-9 rounded-full bg-[#1C1C1E] text-white flex items-center justify-center shrink-0 border border-white/10">
-                    <Users size={16} />
+                  <div className="p-4 flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3.5 min-w-0">
+                      <div className="w-9 h-9 rounded-full bg-[#1C1C1E] text-white flex items-center justify-center shrink-0 border border-white/10">
+                        <Users size={16} />
+                      </div>
+                      <div className="min-w-0">
+                        <h5 className="text-xs sm:text-sm font-bold text-white truncate">12 users assigned</h5>
+                        <p className="text-[11px] text-[#8E8E93] truncate mt-0.5">Ground Operations Team</p>
+                      </div>
+                    </div>
+                    <span className="text-[11px] font-mono text-[#8E8E93] shrink-0">4h ago</span>
                   </div>
-                  <div className="min-w-0">
-                    <h5 className="text-xs sm:text-sm font-bold text-white truncate">12 users assigned</h5>
-                    <p className="text-[11px] text-[#8E8E93] truncate mt-0.5">Ground Operations Team</p>
-                  </div>
-                </div>
-                <span className="text-[11px] font-mono text-[#8E8E93] shrink-0">4h ago</span>
-              </div>
-
-              <div className="p-4 flex items-center justify-between gap-3">
-                <div className="flex items-center gap-3.5 min-w-0">
-                  <div className="w-9 h-9 rounded-full bg-[#1C1C1E] text-white flex items-center justify-center shrink-0 border border-white/10">
-                    <CheckCircle2 size={16} />
-                  </div>
-                  <div className="min-w-0">
-                    <h5 className="text-xs sm:text-sm font-bold text-white truncate">Training completed</h5>
-                    <p className="text-[11px] text-[#8E8E93] truncate mt-0.5">Passenger Boarding Procedures</p>
-                  </div>
-                </div>
-                <span className="text-[11px] font-mono text-[#8E8E93] shrink-0">6h ago</span>
-              </div>
+                </>
+              )}
             </div>
           </div>
 

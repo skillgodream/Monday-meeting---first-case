@@ -1,0 +1,39 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Tamper-proof immutable audit trail: reads & creates allowed, updates & deletes strictly forbidden
+    match /audit_logs/{logId} {
+      allow read, create: if true;
+      allow update, delete: if false;
+    }
+
+    match /sops/{sopId} {
+      allow read, write: if true;
+    }
+
+    match /quizzes/{quizId} {
+      allow read, write: if true;
+    }
+
+    match /progress/{progressId} {
+      allow read, write: if true;
+    }
+
+    match /assignments/{assignmentId} {
+      allow read, write: if true;
+    }
+
+    match /learners/{learnerId} {
+      allow read, write: if true;
+    }
+
+    match /attempts/{attemptId} {
+      allow read, write: if true;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

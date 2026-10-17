@@ -3,8 +3,33 @@ import { SlidePlan } from './types';
 import { Lesson, SlidePage } from '../types';
 import { WelcomePage } from './pages/WelcomePage';
 import { findBestVisualMatch } from '../utils/visualLibraryMatcher';
-import { ArrowLeft, ArrowRight, CheckCircle2, AlertTriangle, ShieldCheck, HelpCircle, Layers, Lightbulb, Play } from 'lucide-react';
+import { ArrowLeft, ArrowRight, CheckCircle2, AlertTriangle, ShieldCheck, Play, Sparkles, Sliders, Layers, Zap } from 'lucide-react';
 import { sounds } from '../utils/audio';
+
+export interface BentoCardItem {
+  label: string;
+  value: string;
+  subtext: string;
+  tag?: string;
+  tagType?: 'default' | 'positive' | 'negative' | 'warning';
+  why?: string;
+  action?: string;
+  consequence?: string;
+}
+
+export interface BentoModuleConfig {
+  num: number;
+  tabLabel: string;
+  badge: string;
+  layoutType: 'grid_4' | 'split_2' | 'sequence_3' | 'hero_photo_traps' | 'scorecard_cta';
+  layoutName: string;
+  title: string;
+  subtitle: string;
+  cards: BentoCardItem[];
+  photoUrl: string;
+  photoCaption: string;
+  extraDetails?: any;
+}
 
 interface ExperiencePlayerProps {
   plan: SlidePlan;
@@ -13,19 +38,278 @@ interface ExperiencePlayerProps {
   onComplete?: () => void;
 }
 
+/**
+ * Dynamic Domain Extractor: Parses lesson/blueprint data into 6 Apple-grade Bento Module Archetypes
+ */
+function extractBentoModulesFromLesson(lesson?: Lesson, plan?: SlidePlan): BentoModuleConfig[] {
+  const sopTitle = lesson?.title || plan?.title || 'Standard Operating Procedure';
+  const sopRole = lesson?.subtitle?.replace(/^Role:\s*/i, '') || (lesson?.operationalBlueprint as any)?.role || 'Frontline Specialist';
+  const opBlueprint = lesson?.operationalBlueprint;
+
+  // 1. MODULE 01: Parameters & Numeric Limits (Type A: 4-Card Bento Grid 2x2)
+  const controls: any[] = opBlueprint?.critical_controls || [];
+  const tools: any[] = opBlueprint?.tools_and_systems || [];
+
+  const c0 = controls[0];
+  const c1 = controls[1];
+  const val0 = c0 ? (typeof c0 === 'string' ? (c0 as string).substring(0, 18) : (c0 as any).rule || '2.1 - 2.4 bar') : '2.1 - 2.4 bar';
+  const val1 = c1 ? (typeof c1 === 'string' ? (c1 as string).substring(0, 18) : (c1 as any).rule || '121.5°C') : '121.5°C';
+
+  const mod1Cards: BentoCardItem[] = [
+    {
+      label: 'PRIMARY OPERATING WINDOW',
+      value: val0,
+      subtext: 'Mandatory operating pressure & flow limit.',
+      tag: 'CONTROL 01',
+      tagType: 'positive',
+    },
+    {
+      label: 'DWELL & THERMAL TARGET',
+      value: val1,
+      subtext: 'Continuous thermal contact threshold required.',
+      tag: 'TARGET 02',
+      tagType: 'default',
+    },
+    {
+      label: 'MAXIMUM HOLD DURATION',
+      value: '30 Min',
+      subtext: 'Maximum permissible dwell before audit re-check.',
+      tag: 'LIMIT 03',
+      tagType: 'warning',
+    },
+    {
+      label: 'HALT & CRITICAL BOUNDARY',
+      value: '< 2.05 bar',
+      subtext: 'Immediate process halt trigger if breached.',
+      tag: 'CRITICAL HALT',
+      tagType: 'negative',
+    },
+  ];
+
+  // 2. MODULE 02: Foundational Principles (Type B: 2-Card Dual Split Compare)
+  const terminology = opBlueprint?.terminology || [];
+  const mod2Cards: BentoCardItem[] = [
+    {
+      label: 'MANDATORY OPERATIONAL STANDARD',
+      value: terminology[0] ? terminology[0].term : 'Verified Identity & Seal Check',
+      subtext: terminology[0] ? terminology[0].meaning : 'Match serial tags and inspect physical security seals prior to line entry.',
+      tag: 'MANDATORY REQUIREMENT',
+      tagType: 'positive',
+      why: 'Prevents unverified materials from entering the active operational stream.',
+    },
+    {
+      label: 'ABSOLUTE RESTRICTION & NON-NEGOTIABLE',
+      value: tools[0] ? `Never bypass ${tools[0].name}` : 'Zero Custom Workarounds',
+      subtext: tools[0] ? (tools[0].never_do || 'Do not bypass automated calibration interlocks.') : 'Improvised procedures or unverified bypasses violate ISO compliance.',
+      tag: 'ZERO TOLERANCE',
+      tagType: 'negative',
+      why: 'Protects frontline operators and prevents irreversible equipment contamination.',
+    },
+  ];
+
+  // 3. MODULE 03: Sequential Flow & Milestones (Type C: 3-Card Sequential Flow)
+  const opSteps = opBlueprint?.operational_steps || [];
+  const mod3Cards: BentoCardItem[] = opSteps.length >= 3
+    ? opSteps.slice(0, 3).map((s, idx) => ({
+        label: `PHASE 0${idx + 1} MILESTONE`,
+        value: s.instruction,
+        subtext: s.why_it_matters || 'Strict sequential execution required.',
+        tag: `0${idx + 1}`,
+        why: `Category: ${s.category || 'Operational Step'}`,
+      }))
+    : [
+        {
+          label: 'PHASE 01 PREPARATION',
+          value: 'Verify Active Work Order & Calibrate Telemetry Gauges',
+          subtext: 'Confirm SKU batch identity and perform zero-point pressure sensor audit.',
+          tag: '01',
+          why: 'Ensures equipment readiness before introducing live material.',
+        },
+        {
+          label: 'PHASE 02 RUN EXECUTION',
+          value: 'Execute Sequence & Monitor Real-Time Thresholds',
+          subtext: 'Maintain parameters within the approved operating window continuously.',
+          tag: '02',
+          why: 'Guarantees uniform process quality and zero-defect output.',
+        },
+        {
+          label: 'PHASE 03 QUALITY SIGN-OFF',
+          value: 'Record Transaction Timestamp & Complete Handover',
+          subtext: 'Log digital audit trail entry and secure physical verification tags.',
+          tag: '03',
+          why: 'Provides unbroken chain-of-custody for administrative review.',
+        },
+      ];
+
+  // 4. MODULE 04: Scenarios & Decision Matrix (Type B: 2-Card Dual Split Scenario)
+  const decisionPoints = opBlueprint?.decision_points || [];
+  const mod4Cards: BentoCardItem[] = decisionPoints.length >= 2
+    ? decisionPoints.slice(0, 2).map((d, idx) => ({
+        label: `SCENARIO 0${idx + 1}: ${d.situation}`,
+        value: d.action || 'Apply documented acceptance criteria strictly.',
+        subtext: d.decision || 'Follow approved operating decision matrix without improvisation.',
+        tag: `FIELD CONDITION 0${idx + 1}`,
+        tagType: 'default',
+        why: 'Company policy governs disposition; verbal promises create compliance liabilities.',
+      }))
+    : [
+        {
+          label: 'SCENARIO 01: SENSOR READOUT FLUCTUATES NEAR BOUNDARY',
+          value: 'Pause execution and initiate secondary verification protocol immediately.',
+          subtext: 'Re-calibrate digital sensor against physical analog gauge before continuing.',
+          tag: 'CONDITION 01',
+          tagType: 'warning',
+          why: 'Prevents false-positive completions during micro-spikes.',
+        },
+        {
+          label: 'SCENARIO 02: NETWORK DISCONNECTION DURING HANDOVER',
+          value: 'Switch to offline ledger logging and record manual supervisor timestamp.',
+          subtext: 'Re-sync records automatically once network link is restored.',
+          tag: 'CONDITION 02',
+          tagType: 'default',
+          why: 'Maintains operational continuity without compromising data integrity.',
+        },
+      ];
+
+  // 5. MODULE 05: Failure Modes & Traps (Type D: Photo-Hero Focal + 2 Trap Warning Cards)
+  const commonMistakes = opBlueprint?.common_mistakes || [];
+  const mod5Cards: BentoCardItem[] = commonMistakes.length >= 2
+    ? commonMistakes.slice(0, 2).map((m, idx) => ({
+        label: `TRAP TRIGGER 0${idx + 1}: ${m.mistake}`,
+        value: m.prevention || 'Pause step and follow mandated escalation path.',
+        subtext: 'High-risk operational trap leading to immediate process shutdown.',
+        tag: `HAZARD 0${idx + 1}`,
+        tagType: 'negative',
+        consequence: 'Risk of equipment damage, audit failure, or safety compromise.',
+      }))
+    : [
+        {
+          label: 'TRAP TRIGGER 01: BYPASSING PRE-ENTRY SEAL VERIFICATION',
+          value: 'Inspect physical security seals and SKU serial tags prior to line entry.',
+          subtext: 'Never assume prior shift completed verification without visual proof.',
+          tag: 'CONTAMINATION TRAP',
+          tagType: 'negative',
+          consequence: 'Irreversible batch contamination and forfeiture of audit certification.',
+        },
+        {
+          label: 'TRAP TRIGGER 02: CUSTOM UNAPPROVED WORKAROUNDS',
+          value: 'Pause affected step immediately and escalate to designated shift supervisor.',
+          subtext: 'Never invent custom shortcuts or override automated safety interlocks.',
+          tag: 'BYPASS RISK',
+          tagType: 'negative',
+          consequence: 'Severe regulatory breach and potential safety hazard.',
+        },
+      ];
+
+  // 6. MODULE 06: Pre-Shift Floor Readiness (Type E: Scorecard Banner + Direct CTA)
+  const mod6Cards: BentoCardItem[] = [
+    {
+      label: 'MINIMUM QUALIFICATION SCORE',
+      value: '85% Minimum Pass',
+      subtext: 'Required baseline score on practice scenarios before floor clearance.',
+      tag: 'COMPLIANCE BENCHMARK',
+      tagType: 'positive',
+    },
+    {
+      label: 'SAFETY VIOLATION TOLERANCE',
+      value: '0 Critical Violations',
+      subtext: 'Zero critical safety or boundary breaches permitted during assessment.',
+      tag: 'SAFETY STANDARD',
+      tagType: 'warning',
+    },
+  ];
+
+  const defaultImg = '/Guruji_Real_Photo_Visual_Library_500/001_retail_store_front.webp';
+
+  return [
+    {
+      num: 1,
+      tabLabel: '01 Parameters',
+      badge: 'MODULE 01',
+      layoutType: 'grid_4',
+      layoutName: '📐 BENTO GRID 2×2',
+      title: 'Operating Parameters & Numeric Limits',
+      subtitle: `Key operational windows, dwell targets, tolerances, and halt limits for ${sopTitle}.`,
+      cards: mod1Cards,
+      photoUrl: findBestVisualMatch('cleanroom pressure gauge equipment', sopTitle).url || defaultImg,
+      photoCaption: 'Digital Pressure & Calibration Gauge • Unit 01',
+    },
+    {
+      num: 2,
+      tabLabel: '02 Principles',
+      badge: 'MODULE 02',
+      layoutType: 'split_2',
+      layoutName: '⚡ DUAL SPLIT',
+      title: 'Foundational Principles & Standards',
+      subtitle: 'Mandatory operational standards versus non-negotiable restrictions.',
+      cards: mod2Cards,
+      photoUrl: findBestVisualMatch('lab equipment sterile inspection', sopTitle).url || defaultImg,
+      photoCaption: 'Certified Cleanroom Operating Station • Bay 04',
+    },
+    {
+      num: 3,
+      tabLabel: '03 Flow',
+      badge: 'MODULE 03',
+      layoutType: 'sequence_3',
+      layoutName: '🔢 SEQUENTIAL FLOW',
+      title: 'Sequential Workflow Progression',
+      subtitle: 'Step-by-step milestone progression from prep to final handover.',
+      cards: mod3Cards,
+      photoUrl: findBestVisualMatch('warehouse workflow process line', sopTitle).url || defaultImg,
+      photoCaption: 'Sequential Barrier & Process Handover Corridor',
+    },
+    {
+      num: 4,
+      tabLabel: '04 Scenarios',
+      badge: 'MODULE 04',
+      layoutType: 'split_2',
+      layoutName: '⚡ DUAL SPLIT',
+      title: 'Field Scenarios & Decision Matrix',
+      subtitle: 'Evaluating live operating conditions and executing approved responses.',
+      cards: mod4Cards,
+      photoUrl: findBestVisualMatch('scanner verification technician check', sopTitle).url || defaultImg,
+      photoCaption: 'Live Floor Telemetry & Real-Time Decision Audit',
+    },
+    {
+      num: 5,
+      tabLabel: '05 Traps',
+      badge: 'MODULE 05',
+      layoutType: 'hero_photo_traps',
+      layoutName: '⚠️ HERO TRAP',
+      title: 'Failure Modes & Bypass Traps',
+      subtitle: 'Critical boundary violations, bypass triggers, and mandatory prevention protocols.',
+      cards: mod5Cards,
+      photoUrl: findBestVisualMatch('safety hazard caution inspection warning', sopTitle).url || defaultImg,
+      photoCaption: '⚠️ High-Risk Boundary Zone • Station 02',
+    },
+    {
+      num: 6,
+      tabLabel: '06 Readiness',
+      badge: 'MODULE 06',
+      layoutType: 'scorecard_cta',
+      layoutName: '📊 SCORECARD',
+      title: 'Pre-Shift Qualification & Readiness',
+      subtitle: 'Verify qualification benchmarks before launching interactive floor simulation.',
+      cards: mod6Cards,
+      photoUrl: findBestVisualMatch('checklist quality certificate badge complete', sopTitle).url || defaultImg,
+      photoCaption: 'Floor Supervisor Qualification Sign-Off',
+    },
+  ];
+}
+
 export function ExperiencePlayer({
   plan,
   lesson,
   onClose,
   onComplete,
 }: ExperiencePlayerProps) {
-  // View states: 'welcome' (Front Blue Title Page) | 'modules' (The 6-Module Picture Flow)
+  // View states: 'welcome' (Main Blue Title Page) | 'modules' (The Adaptive Bento Learning Deck)
   const [currentView, setCurrentView] = useState<'welcome' | 'modules'>('welcome');
   const [activeModule, setActiveModule] = useState<number>(1); // 1 to 6
   const [viewOriginalPpt, setViewOriginalPpt] = useState<boolean>(false);
   const [currentPptSlide, setCurrentPptSlide] = useState<number>(1);
 
-  // Compute actual slides derived directly from uploaded PowerPoint / PDF / document
+  // Compute original slide deck pages if available
   const realSlides: SlidePage[] = useMemo(() => {
     if (lesson?.originalSlides && lesson.originalSlides.length > 0) {
       return lesson.originalSlides;
@@ -51,9 +335,9 @@ export function ExperiencePlayer({
         title: lesson?.title || 'Standard Operating Procedure',
         subtitle: lesson?.subtitle || 'Original presentation slide content preserved.',
         bullets: [
-          `Document Reference: ${lesson?.sourceMeta?.filename || 'Uploaded_Presentation.pptx'}`,
-          `Target Role: ${lesson?.operationalBlueprint?.role || 'Operator'} · Scope: ${lesson?.operationalBlueprint?.scope || 'Operational Standard'}`,
-          `Total Words: ${lesson?.sourceMeta?.wordCount || 0} · Pages: ${lesson?.sourceMeta?.pageCount || 1}`,
+          `Document Reference: ${lesson?.sourceMeta?.filename || 'Uploaded_SOP.pdf'}`,
+          `Target Role: ${lesson?.operationalBlueprint?.role || 'Operator'}`,
+          `Total Words: ${lesson?.sourceMeta?.wordCount || 0}`,
         ],
         rawContent: lesson?.description || '',
       },
@@ -64,282 +348,19 @@ export function ExperiencePlayer({
   const currentSlideIndex = Math.min(Math.max(0, currentPptSlide - 1), totalPptSlides - 1);
   const activeSlide = realSlides[currentSlideIndex] || realSlides[0];
 
-  // Welcome Slide (Slide 0)
+  // Welcome Slide (Front Blue Title Page)
   const welcomeSlide = plan?.slides?.find((s) => s.type === 'WELCOME') || {
     type: 'WELCOME' as const,
-    title: lesson?.title || plan.title || 'Standard Operating Procedure',
+    title: lesson?.title || plan?.title || 'Standard Operating Procedure',
     content: lesson?.description || 'Interactive operational procedure walkthrough and key concepts review.',
     role: lesson?.subtitle || (lesson as any)?.role || 'Frontline Operations Specialist',
     tag: 'Module Overview',
     cta: "Let's Begin",
   };
 
-  // Derive structured data for the 6 modules from lesson / blueprint / plan
-  const sopTitle = lesson?.title || plan.title || 'Standard Operating Procedure';
-  const sopRole = lesson?.subtitle?.replace(/^Role:\s*/i, '') || (lesson?.operationalBlueprint as any)?.role || 'Workplace Operator';
-  const sopScope = (lesson?.operationalBlueprint as any)?.scope || 'Personnel Airlock & Primary Operating Core Suite';
-  const sopPurpose = lesson?.description || (lesson?.operationalBlueprint as any)?.purpose || 'Maintain strict operational compliance and safety integrity.';
-
-  // Module 1: Objectives & Scope
-  const rawObjectives = plan?.slides?.find((s) => s.type === 'OBJECTIVES')?.items || [
-    'Verify active order ID and baseline authorization before entry',
-    'Follow sequence steps in exact order without bypassing verification',
-    'Execute correct exception protocol when encountering anomalies'
-  ];
-
-  // Module 2: Foundational Concepts & Tools
-  const rawConcepts = useMemo(() => {
-    const tools = lesson?.operationalBlueprint?.tools_and_systems || [];
-    const terminology = lesson?.operationalBlueprint?.terminology || [];
-    const controls = lesson?.operationalBlueprint?.critical_controls || [];
-
-    const list: Array<{ title: string; subtitle: string; why: string; tag: string; imageLabel: string }> = [];
-
-    if (tools.length > 0) {
-      tools.slice(0, 3).forEach((t, i) => {
-        list.push({
-          title: t.name,
-          subtitle: t.purpose || 'Mandatory equipment for standard procedure execution.',
-          why: t.never_do ? `NEVER: ${t.never_do}` : 'Zero deviation allowed during equipment handling.',
-          tag: `TOOL 0${i + 1}`,
-          imageLabel: `${t.name} Calibration & Spec Verification`,
-        });
-      });
-    }
-
-    if (terminology.length > 0 && list.length < 3) {
-      terminology.slice(0, 2).forEach((term, i) => {
-        list.push({
-          title: term.term,
-          subtitle: term.meaning,
-          why: 'Clear understanding required for compliance audit standards.',
-          tag: `CONCEPT 0${list.length + 1}`,
-          imageLabel: `${term.term} Boundary Definition`,
-        });
-      });
-    }
-
-    if (controls.length > 0 && list.length < 3) {
-      controls.slice(0, 2).forEach((c, i) => {
-        list.push({
-          title: typeof c === 'string' ? c : (c as any).rule || 'Critical Parameter Check',
-          subtitle: 'Core operational threshold required for zero-defect compliance.',
-          why: typeof c === 'object' && (c as any).rationale ? (c as any).rationale : 'Prevents process failures and security breaches.',
-          tag: `PARAMETER 0${list.length + 1}`,
-          imageLabel: 'Parameter Threshold Verification',
-        });
-      });
-    }
-
-    if (list.length === 0) {
-      list.push(
-        {
-          title: 'Differential Pressure & Environmental Threshold',
-          subtitle: 'Physical parameters required for zero-defect operating zone boundary compliance.',
-          why: 'Prevents environmental contamination migration into clean working suites.',
-          tag: 'CONCEPT 01',
-          imageLabel: 'Differential Pressure (>= +15 Pa) Manometer',
-        },
-        {
-          title: 'Step-Over Bench (SOB) Line of Demarcation',
-          subtitle: 'Physical boundary dividing non-sterile preparation area from certified cleanroom boundary.',
-          why: 'Zero contact is permitted between unbooted feet and sterile flooring to prevent microbial transfer.',
-          tag: 'CONCEPT 02',
-          imageLabel: '70% IPA Contact Time & Hand Scrub Protocol',
-        }
-      );
-    }
-    return list;
-  }, [lesson]);
-
-  // Module 3: Sequential Milestones & Flow
-  const rawFlowSteps = useMemo(() => {
-    const opSteps = lesson?.operationalBlueprint?.operational_steps || [];
-    if (opSteps.length > 0) {
-      return opSteps.slice(0, 4).map((s, idx) => ({
-        stepNum: idx + 1,
-        title: s.instruction,
-        why: s.why_it_matters || 'Strict adherence required for procedural integrity.',
-        category: s.category || 'Sequential Step',
-        imageLabel: `Milestone 0${idx + 1}: ${s.action_verb || 'Step'} Execution Phase`,
-      }));
-    }
-    const teachSlides = plan?.slides?.filter((s) => s.type === 'TEACH_STEP') || [];
-    if (teachSlides.length > 0) {
-      return teachSlides.slice(0, 4).map((s, idx) => ({
-        stepNum: idx + 1,
-        title: s.title,
-        why: s.why || (s.items ? s.items.join('. ') : 'Follow sequential execution order strictly.'),
-        category: 'Phase Milestone',
-        imageLabel: `Milestone 0${idx + 1}: ${s.title.slice(0, 30)}`,
-      }));
-    }
-    return [
-      { stepNum: 1, title: 'Verify active order parameters and confirm identity', why: 'Prevents taking action against incorrect or unassigned records.', category: 'Preparation', imageLabel: 'Order & Identity Verification' },
-      { stepNum: 2, title: 'Inspect condition, packaging seals & physical tags', why: 'Identifies damage before accepting custody transfer.', category: 'Inspection', imageLabel: 'Seal & Condition Verification' },
-      { stepNum: 3, title: 'Apply documented acceptance decision criteria', why: 'Never improvise rules or guess approval timelines.', category: 'Decision Gate', imageLabel: 'Acceptance Criteria Evaluation' },
-      { stepNum: 4, title: 'Record transaction audit timestamp and secure items', why: 'Ensures unbroken chain-of-custody logging.', category: 'Closeout', imageLabel: 'Audit Record & Secure Handover' },
-    ];
-  }, [lesson, plan]);
-
-  // Module 4: Operational Scenarios & Practice
-  const rawScenarios = useMemo(() => {
-    const decisions = lesson?.operationalBlueprint?.decision_points || [];
-    if (decisions.length > 0) {
-      return decisions.slice(0, 3).map((d, i) => ({
-        title: d.situation,
-        action: d.action || 'Apply documented acceptance criteria strictly.',
-        rationale: d.decision || 'Follow approved operating decision matrix without improvisation.',
-        imageLabel: `Scenario 0${i + 1}: Real-Time Decision Audit`,
-      }));
-    }
-    return [
-      {
-        title: 'Customer disputes eligibility or demands immediate verbal guarantee',
-        action: 'DO: Explain recorded check calmly. NEVER: Guarantee refund or invent rules.',
-        rationale: 'Company policy governs financial disposition; verbal promises create compliance liabilities.',
-        imageLabel: 'Real-Time Telemetry & Parameter Audit',
-      },
-      {
-        title: 'App or scanner network disconnection during live handover',
-        action: 'DO: Follow approved offline log procedure. NEVER: Complete task without timestamp.',
-        rationale: 'Ensures data reconciliation upon system reconnection without lost items.',
-        imageLabel: 'Offline Protocol & System Disconnection',
-      }
-    ];
-  }, [lesson]);
-
-  // Module 5: Mistakes, Exceptions & Consequences
-  const rawMistakes = useMemo(() => {
-    const commonMistakes = lesson?.operationalBlueprint?.common_mistakes || [];
-    const exceptions = lesson?.operationalBlueprint?.exceptions || [];
-    const list: Array<{ mistake: string; prevention: string; consequence: string; imageLabel: string }> = [];
-
-    if (commonMistakes.length > 0) {
-      commonMistakes.slice(0, 3).forEach((m) => {
-        list.push({
-          mistake: m.mistake,
-          prevention: m.prevention || 'Adhere strictly to verified SOP criteria.',
-          consequence: 'Risk of inventory defect, compliance audit failure, or safety compromise.',
-          imageLabel: 'Critical Boundary & Contamination Trap Warning',
-        });
-      });
-    }
-
-    if (exceptions.length > 0 && list.length < 3) {
-      exceptions.slice(0, 2).forEach((e) => {
-        list.push({
-          mistake: `Ignoring exception trigger: "${e.trigger}"`,
-          prevention: `Execute mandated action: ${e.resolution}`,
-          consequence: 'Unresolved operational gap leading to escalation failure.',
-          imageLabel: 'Exception Escalation Protocol',
-        });
-      });
-    }
-
-    if (list.length === 0) {
-      list.push(
-        {
-          mistake: 'Inventing an unapproved custom workaround for borderline conditions',
-          prevention: 'Pause the affected step and escalate directly to the designated shift lead.',
-          consequence: 'Severe regulatory breach and forfeiture of audit certification.',
-          imageLabel: 'Critical Boundary & Contamination Trap Warning',
-        },
-        {
-          mistake: 'Bypassing pre-execution identity or physical seal verification checks',
-          prevention: 'Always match documented SKU and serial identifiers before proceeding.',
-          consequence: 'High probability of incorrect shipment dispatch and inventory shrinkage.',
-          imageLabel: 'Seal Integrity Breach Violation',
-        }
-      );
-    }
-    return list;
-  }, [lesson]);
-
-  // Module 6: Key Takeaways
-  const rawTakeaways = useMemo(() => {
-    const takeawaysSlide = plan?.slides?.find((s) => s.type === 'KEY_TAKEAWAYS')?.items;
-    if (takeawaysSlide && takeawaysSlide.length > 0) {
-      return takeawaysSlide.slice(0, 3);
-    }
-    return [
-      `Always follow the documented SOP standard for ${sopTitle}.`,
-      'Never improvise rules or guess timelines for exceptions.',
-      'Log audit evidence and capture required serial identifiers.'
-    ];
-  }, [plan, sopTitle]);
-
-  // Helper to fetch matching visual for module headers and content cards
-  const heroImage = useMemo(() => {
-    const match = findBestVisualMatch(sopTitle, `Module 0${activeModule}`);
-    return match.url || '/Guruji_Real_Photo_Visual_Library_500/001_retail_store_front.webp';
-  }, [sopTitle, activeModule]);
-
-  // Module Definition Config matching user's requested specification:
-  const MODULES = [
-    {
-      num: 1,
-      id: 'introduction',
-      name: 'Introduction',
-      shortPill: '01 Introduction',
-      badge: `01 // INTRODUCTION • ${sopTitle.toUpperCase()}`,
-      title: 'SOP Title & Operational Baseline Scope',
-      subtitle: `${sopPurpose} Governing frontline execution for ${sopRole}.`,
-      heroBg: findBestVisualMatch('hospitality clean room entrance store front', sopTitle).url,
-    },
-    {
-      num: 2,
-      id: 'understand',
-      name: 'Understand',
-      shortPill: '02 Understand',
-      badge: `02 // UNDERSTAND • ${sopTitle.toUpperCase()}`,
-      title: 'Foundational Concepts & Principles',
-      subtitle: 'Core operational rules, physical thresholds, and parameters required for zero-defect compliance.',
-      heroBg: findBestVisualMatch('cleanroom equipment laboratory tools', sopTitle).url,
-    },
-    {
-      num: 3,
-      id: 'visualise',
-      name: 'Visualise',
-      shortPill: '03 Visualise',
-      badge: `03 // VISUALISE • ${sopTitle.toUpperCase()}`,
-      title: 'Process Flows & Sequential Milestones',
-      subtitle: 'Sequential barrier progression, workflow stages, and handover boundaries.',
-      heroBg: findBestVisualMatch('warehouse workflow timeline process', sopTitle).url,
-    },
-    {
-      num: 4,
-      id: 'apply',
-      name: 'Apply',
-      shortPill: '04 Apply',
-      badge: `04 // APPLY • ${sopTitle.toUpperCase()}`,
-      title: 'Operational Scenarios & Practice',
-      subtitle: 'Real-world execution contexts testing your capability to resolve live operating challenges.',
-      heroBg: findBestVisualMatch('scanner verification technician check', sopTitle).url,
-    },
-    {
-      num: 5,
-      id: 'avoid-errors',
-      name: 'Avoid Errors',
-      shortPill: '05 Avoid Errors',
-      badge: `05 // AVOID ERRORS • ${sopTitle.toUpperCase()}`,
-      title: 'Mistakes, Exceptions & Consequences',
-      subtitle: 'High-risk failure modes, boundary breaches, and non-negotiable corrective actions.',
-      heroBg: findBestVisualMatch('safety hazard caution inspection warning', sopTitle).url,
-    },
-    {
-      num: 6,
-      id: 'reinforce',
-      name: 'Reinforce',
-      shortPill: '06 Reinforce',
-      badge: `06 // REINFORCE • ${sopTitle.toUpperCase()}`,
-      title: 'Key Takeaways & Quick Knowledge Checks',
-      subtitle: 'Core operational rules to memorize and final readiness confirmation before practice.',
-      heroBg: findBestVisualMatch('checklist quality certificate badge complete', sopTitle).url,
-    },
-  ];
-
-  const currentMod = MODULES[activeModule - 1] || MODULES[0];
+  // Derive all 6 Bento Module Configurations
+  const bentoModules = useMemo(() => extractBentoModulesFromLesson(lesson, plan), [lesson, plan]);
+  const currentMod = bentoModules[activeModule - 1] || bentoModules[0];
 
   const handleNextModule = () => {
     sounds.playTap();
@@ -363,11 +384,11 @@ export function ExperiencePlayer({
     }
   };
 
-  // If on initial front page: render WelcomePage (the Front Blue Title page) 100% intact!
+  // RENDER 1: Front Blue Title Page (100% INTACT)
   if (currentView === 'welcome') {
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#040814] select-none p-0 sm:p-4">
-        <div className="w-full max-w-[440px] h-full sm:h-[820px] sm:rounded-[32px] bg-[#050B18] flex flex-col overflow-hidden shadow-[0_20px_60px_rgba(0,0,0,0.6)] border border-blue-950/40 relative">
+        <div className="w-full max-w-[460px] h-full sm:h-[840px] sm:rounded-[36px] bg-[#050B18] flex flex-col overflow-hidden shadow-[0_20px_60px_rgba(0,0,0,0.6)] border border-blue-950/40 relative">
           <WelcomePage
             slide={welcomeSlide}
             onNext={() => {
@@ -384,38 +405,38 @@ export function ExperiencePlayer({
     );
   }
 
-  // Otherwise: Render the 6-Module Picture Support Training Deck matching the 6 screenshots!
+  // RENDER 2: Modern Apple-Grade Adaptive Bento Learning Deck (#FBFBFD Light Aesthetic)
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#070A14] select-none p-0 sm:p-4">
-      <div className="w-full max-w-[440px] h-full sm:h-[820px] sm:rounded-[32px] bg-[#0A0E1A] flex flex-col overflow-hidden shadow-[0_25px_70px_rgba(0,0,0,0.8)] border border-white/10 relative text-white font-sans">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-md select-none p-0 sm:p-4">
+      <div className="w-full max-w-[460px] h-full sm:h-[840px] sm:rounded-[36px] bg-[#FBFBFD] flex flex-col overflow-hidden shadow-[0_25px_70px_rgba(0,0,0,0.25)] border border-slate-200 relative text-slate-900 font-sans">
         
-        {/* TOP BAR: Back Navigation Button */}
-        <div className="h-12 px-4 flex items-center justify-between border-b border-white/10 bg-[#0A0E1A]/90 backdrop-blur-xl shrink-0 z-20">
+        {/* TOP BAR: Navigation Controls */}
+        <div className="h-14 px-5 flex items-center justify-between border-b border-slate-200/80 bg-white/90 backdrop-blur-md shrink-0 z-20">
           <button
             onClick={handlePrevModule}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition-all active:scale-95 cursor-pointer"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all active:scale-95 cursor-pointer"
           >
-            <ArrowLeft size={14} className="text-white" />
+            <ArrowLeft size={14} className="text-slate-700" />
             <span>Back</span>
           </button>
 
           <div className="flex items-center gap-2">
-            <span className="text-[11px] font-mono text-slate-400 font-bold uppercase tracking-wider">
+            <span className="text-[11px] font-mono text-slate-500 font-bold uppercase tracking-wider">
               Module {activeModule} of 6
             </span>
             <button
               onClick={onClose}
-              className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-slate-300 hover:text-white transition-colors cursor-pointer text-xs"
-              title="Exit to Overview"
+              className="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500 hover:text-slate-900 transition-colors cursor-pointer text-xs font-bold"
+              title="Close"
             >
               ✕
             </button>
           </div>
         </div>
 
-        {/* VIEW MODE TOGGLE BAR: Interactive Learning Modules vs Original PPT Slide Presentation */}
-        <div className="px-4 pt-2 shrink-0">
-          <div className="grid grid-cols-2 p-1 bg-white/5 border border-white/10 rounded-full">
+        {/* VIEW TOGGLE BAR: Bento Deck vs Original PPT Slides */}
+        <div className="px-5 pt-3 shrink-0 bg-[#FBFBFD]">
+          <div className="grid grid-cols-2 p-1 bg-slate-200/70 rounded-full">
             <button
               onClick={() => {
                 sounds.playTap();
@@ -423,11 +444,12 @@ export function ExperiencePlayer({
               }}
               className={`py-1.5 px-3 rounded-full text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
                 !viewOriginalPpt
-                  ? 'bg-indigo-600 text-white shadow-md'
-                  : 'text-slate-400 hover:text-white'
+                  ? 'bg-black text-white shadow-sm'
+                  : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              <span>Interactive Deck</span>
+              <Sparkles size={12} />
+              <span>Interactive Bento Deck</span>
             </button>
             <button
               onClick={() => {
@@ -436,536 +458,375 @@ export function ExperiencePlayer({
               }}
               className={`py-1.5 px-3 rounded-full text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
                 viewOriginalPpt
-                  ? 'bg-indigo-600 text-white shadow-md'
-                  : 'text-slate-400 hover:text-white'
+                  ? 'bg-black text-white shadow-sm'
+                  : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              <span>🖼️ Original PPT Slides</span>
+              <span>🖼️ Original PPT</span>
             </button>
           </div>
         </div>
 
-        {/* SCROLLABLE MAIN CONTENT AREA */}
-        <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
-          
-          {/* OPTION A: ORIGINAL UPLOADED PPT SLIDE PRESENTATION VIEW (1:1 Preserved Layout) */}
-          {viewOriginalPpt ? (
-            <div className="space-y-4 animate-in fade-in duration-300">
-              
-              {/* Top Banner Notice */}
-              <div className="p-4 rounded-2xl bg-indigo-950/40 border border-indigo-500/30 flex items-center justify-between text-xs">
-                <div className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-indigo-400 animate-pulse" />
-                  <span className="font-bold text-indigo-200">Original Presentation Slide Design Preserved</span>
-                </div>
-                <span className="font-mono text-indigo-300 font-bold">
-                  Slide {activeSlide.slideNumber} of {totalPptSlides}
-                </span>
-              </div>
-
-              {/* 16:9 Presentation Slide Card (Original PPT Design Replica) */}
-              <div className="bg-[#0D1222] border-2 border-white/15 rounded-3xl p-5 shadow-2xl space-y-4 text-white relative overflow-hidden">
-                {/* Decorative PPT Header Bar */}
-                <div className="flex items-center justify-between pb-3 border-b border-white/10">
-                  <span className="text-[10px] font-mono font-extrabold uppercase tracking-widest text-indigo-400">
-                    {lesson?.sourceMeta?.filename || 'Uploaded_Presentation.pptx'}
-                  </span>
-                  <span className="text-[10px] font-bold text-slate-400">
-                    Slide {String(activeSlide.slideNumber).padStart(2, '0')}
-                  </span>
-                </div>
-
-                {/* Original Slide Title */}
-                <div className="space-y-1">
-                  <h2 className="text-lg sm:text-xl font-black text-white tracking-tight">
-                    {activeSlide.title}
-                  </h2>
-                  <p className="text-xs text-slate-300">
-                    {activeSlide.subtitle || `Content extracted directly from slide ${activeSlide.slideNumber}.`}
-                  </p>
-                </div>
-
-                {/* Original Visual Diagram Frame or Canvas Screenshot */}
-                <div className="relative rounded-2xl overflow-hidden min-h-[190px] max-h-[320px] w-full border border-white/10 bg-black/60 flex items-center justify-center">
-                  {activeSlide.imageDataUrl ? (
-                    <img
-                      src={activeSlide.imageDataUrl}
-                      alt={`Slide ${activeSlide.slideNumber} Rendered Image`}
-                      className="w-full h-full max-h-[300px] object-contain rounded-2xl"
-                    />
-                  ) : (
-                    <>
-                      <img
-                        src={heroImage}
-                        alt={`Slide ${activeSlide.slideNumber} Visual`}
-                        className="w-full h-48 object-cover opacity-80"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-                      <div className="absolute bottom-3 left-3 px-3 py-1 rounded-full bg-black/80 backdrop-blur-md border border-white/20 text-white text-[10px] font-mono font-bold">
-                        Slide {activeSlide.slideNumber} Visual Layout & Diagram
-                      </div>
-                    </>
-                  )}
-                </div>
-
-                {/* Original Slide Bullet Points */}
-                <div className="space-y-2 pt-1">
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-indigo-400 block">
-                    SLIDE BULLET POINTS & SPECIFICATIONS
-                  </span>
-                  <div className="space-y-2 text-xs font-semibold text-slate-200">
-                    {activeSlide.bullets && activeSlide.bullets.length > 0 ? (
-                      activeSlide.bullets.map((bullet, idx) => (
-                        <div key={idx} className="p-3 rounded-xl bg-white/5 border border-white/10 flex items-start gap-2.5">
-                          <span className="text-indigo-400 font-bold shrink-0">•</span>
-                          <span className="leading-relaxed">{bullet}</span>
-                        </div>
-                      ))
-                    ) : (
-                      <div className="p-3 rounded-xl bg-white/5 border border-white/10 flex items-start gap-2.5">
-                        <span className="text-indigo-400 font-bold shrink-0">•</span>
-                        <span>{activeSlide.rawContent || 'Slide content loaded from original deck.'}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Slide Carousel Controls */}
-                <div className="flex items-center justify-between pt-3 border-t border-white/10">
-                  <button
-                    disabled={currentPptSlide <= 1}
-                    onClick={() => {
-                      sounds.playTap();
-                      setCurrentPptSlide((prev) => Math.max(1, prev - 1));
-                    }}
-                    className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 disabled:opacity-30 text-white text-xs font-bold transition-all cursor-pointer"
-                  >
-                    ← Previous
-                  </button>
-
-                  <div className="flex items-center gap-1 overflow-x-auto max-w-[180px] sm:max-w-none scrollbar-none py-1">
-                    {realSlides.map((s, idx) => {
-                      const num = idx + 1;
-                      return (
-                        <button
-                          key={num}
-                          onClick={() => {
-                            sounds.playTap();
-                            setCurrentPptSlide(num);
-                          }}
-                          className={`w-7 h-7 rounded-lg text-xs font-bold shrink-0 transition-all cursor-pointer ${
-                            currentPptSlide === num
-                              ? 'bg-indigo-600 text-white shadow-md'
-                              : 'bg-white/5 text-slate-400 hover:text-white'
-                          }`}
-                        >
-                          {num}
-                        </button>
-                      );
-                    })}
-                  </div>
-
-                  <button
-                    disabled={currentPptSlide >= totalPptSlides}
-                    onClick={() => {
-                      sounds.playTap();
-                      setCurrentPptSlide((prev) => Math.min(totalPptSlides, prev + 1));
-                    }}
-                    className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-30 text-white text-xs font-bold transition-all cursor-pointer"
-                  >
-                    Next →
-                  </button>
-                </div>
-
-              </div>
-
-            </div>
-          ) : (
-            /* OPTION B: INTERACTIVE LEARNING MODULES DECK */
-            <>
-          <div className="relative rounded-3xl overflow-hidden p-6 border border-white/15 shadow-2xl min-h-[190px] flex flex-col justify-end">
-            {/* Background Image with Ambient Overlay */}
-            <div 
-              className="absolute inset-0 bg-cover bg-center transition-all duration-700 scale-105"
-              style={{ backgroundImage: `url(${currentMod.heroBg || heroImage})` }}
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-[#0A0E1A] via-[#0A0E1A]/80 to-[#0A0E1A]/40" />
-
-            {/* Translucent Capsule Monospace Badge */}
-            <div className="relative z-10 self-start mb-2">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/15 backdrop-blur-md border border-white/20 text-[10px] font-mono font-bold tracking-widest text-indigo-200 uppercase">
-                <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse" />
-                {currentMod.badge}
-              </span>
-            </div>
-
-            {/* Oversized Structural Title */}
-            <h1 className="relative z-10 text-xl sm:text-2xl font-black text-white tracking-tight leading-tight">
-              {currentMod.title}
-            </h1>
-
-            {/* Subtitle Sentence */}
-            <p className="relative z-10 text-xs sm:text-[13px] text-slate-300 font-medium mt-1.5 leading-relaxed max-w-sm">
-              {currentMod.subtitle}
-            </p>
-          </div>
-
-          {/* HORIZONTAL TAB BAR (Scrollable Pills with Active Dark Blue Pill) */}
-          <div className="flex items-center gap-2 overflow-x-auto py-1 scrollbar-none">
-            {MODULES.map((mod) => (
+        {/* 6 HORIZONTAL TAB PILLS */}
+        <div className="px-5 pt-3 pb-2 shrink-0 bg-[#FBFBFD]">
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+            {bentoModules.map((mod) => (
               <button
                 key={mod.num}
                 onClick={() => {
                   sounds.playTap();
                   setActiveModule(mod.num);
                 }}
-                className={`px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap transition-all duration-200 cursor-pointer shrink-0 ${
+                className={`px-3.5 py-1.5 rounded-full text-[11px] font-bold whitespace-nowrap transition-all duration-200 cursor-pointer shrink-0 ${
                   activeModule === mod.num
-                    ? 'bg-[#0B1528] text-white border border-blue-500/50 shadow-md shadow-blue-900/30 ring-1 ring-blue-500/30'
-                    : 'bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white border border-white/5'
+                    ? 'bg-black text-white shadow-sm ring-2 ring-black/10'
+                    : 'bg-[#F1F3F5] hover:bg-slate-200 text-slate-600 hover:text-slate-900 border border-slate-200/80'
                 }`}
               >
-                {mod.shortPill}
+                {mod.tabLabel}
               </button>
             ))}
           </div>
+        </div>
 
-          {/* DYNAMIC PICTURE SUPPORT CARDS FOR THE ACTIVE MODULE */}
+        {/* SCROLLABLE MAIN CONTENT CANVAS */}
+        <div className="flex-1 overflow-y-auto px-5 py-2 space-y-4 bg-[#FBFBFD]">
           
-          {/* MODULE 01: INTRODUCTION */}
-          {activeModule === 1 && (
-            <div className="space-y-4 animate-in fade-in duration-300">
-              <div className="bg-white rounded-3xl p-5 text-slate-900 shadow-xl border border-slate-200/80 space-y-4">
-                
-                {/* Meta details */}
-                <div className="space-y-2 text-xs">
-                  <p className="text-slate-600 font-medium leading-relaxed">
-                    {sopPurpose} All personnel are primary vectors of execution and must strictly maintain documented standard behaviour.
-                  </p>
-                  <div className="pt-2 border-t border-slate-100 space-y-1.5">
-                    <div className="flex items-start gap-2">
-                      <span className="font-extrabold text-slate-800 shrink-0">Target Role:</span>
-                      <span className="font-bold text-indigo-700">{sopRole}</span>
-                    </div>
-                    <div className="flex items-start gap-2">
-                      <span className="font-extrabold text-slate-800 shrink-0">Scope:</span>
-                      <span className="text-slate-700">{sopScope}</span>
-                    </div>
+          {/* OPTION A: ORIGINAL PPT SLIDE VIEW */}
+          {viewOriginalPpt ? (
+            <div className="space-y-4 animate-in fade-in duration-200">
+              <div className="p-3.5 rounded-2xl bg-slate-100 border border-slate-200 flex items-center justify-between text-xs">
+                <span className="font-bold text-slate-700">Original Presentation Slide Preserved</span>
+                <span className="font-mono text-slate-500 font-bold">Slide {activeSlide.slideNumber} of {totalPptSlides}</span>
+              </div>
+
+              <div className="bg-white rounded-3xl p-5 border border-slate-200/90 shadow-sm space-y-4">
+                <h2 className="text-xl font-black text-slate-900 tracking-tight">{activeSlide.title}</h2>
+                <p className="text-xs text-slate-500">{activeSlide.subtitle || 'Original slide content.'}</p>
+                <div className="rounded-2xl overflow-hidden h-48 bg-slate-100 border border-slate-200 relative flex items-center justify-center">
+                  <img src={currentMod.photoUrl} alt="Slide visual" className="w-full h-full object-cover" />
+                  <div className="absolute bottom-3 left-3 px-3 py-1 rounded-full bg-black/60 backdrop-blur-md border border-white/20 text-white text-[10px] font-mono font-bold">
+                    Slide {activeSlide.slideNumber} Visual
                   </div>
                 </div>
-
-                {/* Picture Banner with Bottom-Left Caption Badge */}
-                <div className="relative rounded-2xl overflow-hidden h-44 sm:h-48 w-full border border-slate-200">
-                  <img
-                    src={findBestVisualMatch('sterile cleanroom personnel check', sopTitle).url || heroImage}
-                    alt="Scope Verification"
-                    className="w-full h-full object-cover"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-                  <div className="absolute bottom-3 left-3 px-3 py-1 rounded-full bg-black/60 backdrop-blur-md border border-white/20 text-white text-[11px] font-mono font-bold">
-                    Sterile PPE & Demarcation Verification
-                  </div>
+                <div className="space-y-2 pt-1">
+                  <span className="text-[10px] font-mono font-bold tracking-widest text-slate-400 uppercase">KEY SPECIFICATIONS</span>
+                  {activeSlide.bullets?.map((b, i) => (
+                    <div key={i} className="p-3 rounded-xl bg-slate-50 border border-slate-100 text-xs font-semibold text-slate-700">
+                      • {b}
+                    </div>
+                  ))}
                 </div>
-
-                {/* Explicit Learning Objectives */}
-                <div className="pt-2 space-y-2.5">
-                  <span className="text-[11px] font-black tracking-widest text-slate-400 uppercase block">
-                    EXPLICIT LEARNING OBJECTIVES
+                <div className="flex items-center justify-between pt-2">
+                  <button
+                    disabled={currentPptSlide <= 1}
+                    onClick={() => setCurrentPptSlide((p) => Math.max(1, p - 1))}
+                    className="px-3 py-1.5 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold disabled:opacity-30"
+                  >
+                    ← Prev
+                  </button>
+                  <span className="text-xs font-mono font-bold text-slate-400">{currentPptSlide} / {totalPptSlides}</span>
+                  <button
+                    disabled={currentPptSlide >= totalPptSlides}
+                    onClick={() => setCurrentPptSlide((p) => Math.min(totalPptSlides, p + 1))}
+                    className="px-3 py-1.5 rounded-xl bg-black text-white text-xs font-bold disabled:opacity-30"
+                  >
+                    Next →
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : (
+            /* OPTION B: ADAPTIVE BENTO LEARNING DECK ARCHETYPES */
+            <div className="space-y-4 animate-in fade-in duration-200">
+              
+              {/* HEADER ANATOMY (Identical across every slide) */}
+              <div className="space-y-1.5">
+                {/* Row 1: Two capsule badges */}
+                <div className="flex items-center gap-2">
+                  <span className="bg-black text-white text-[11px] font-bold rounded-full uppercase tracking-wide px-3.5 py-1">
+                    {currentMod.badge}
                   </span>
-                  <div className="space-y-2">
-                    {rawObjectives.map((obj, i) => (
-                      <div key={i} className="flex items-start gap-2.5 bg-slate-50 border border-slate-100 rounded-xl p-3">
-                        <CheckCircle2 size={16} className="text-emerald-600 shrink-0 mt-0.5" />
-                        <span className="text-xs font-semibold text-slate-800 leading-snug">{obj}</span>
+                  <span className="bg-[#F1F3F5] text-slate-600 font-mono text-[10px] font-semibold border border-slate-200/90 rounded-full px-3 py-1 flex items-center gap-1.5">
+                    {currentMod.layoutName}
+                  </span>
+                </div>
+
+                {/* Row 2: Prominent Oversized Heading */}
+                <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight leading-tight mt-1">
+                  {currentMod.title}
+                </h1>
+
+                {/* Row 3: Single-line Subtitle */}
+                <p className="text-xs sm:text-sm text-slate-500 font-normal mt-1 leading-relaxed">
+                  {currentMod.subtitle}
+                </p>
+              </div>
+
+              {/* ARCHETYPE TYPE A: 4-Card Bento Grid (2x2) [Module 01] */}
+              {currentMod.layoutType === 'grid_4' && (
+                <div className="space-y-4">
+                  {/* 2x2 Grid of compact square cards */}
+                  <div className="grid grid-cols-2 gap-3">
+                    {currentMod.cards.map((card, idx) => (
+                      <div
+                        key={idx}
+                        className="bg-white rounded-2xl p-4 border border-slate-200/90 shadow-[0_2px_8px_rgba(0,0,0,0.03)] flex flex-col justify-between min-h-[120px]"
+                      >
+                        <div>
+                          <span className="text-[10px] sm:text-[11px] font-mono tracking-widest text-slate-400 uppercase font-bold block mb-1">
+                            {card.label}
+                          </span>
+                          <span className="text-xl sm:text-3xl font-black font-mono text-slate-900 tracking-tight block">
+                            {card.value}
+                          </span>
+                        </div>
+                        <p className="text-xs text-slate-600 font-medium leading-snug mt-2">
+                          {card.subtext}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Anchored Equipment Photo with Frosted Glass Telemetry Caption */}
+                  <div className="rounded-2xl sm:rounded-3xl overflow-hidden border border-slate-200 shadow-sm relative h-48 sm:h-52 w-full">
+                    <img src={currentMod.photoUrl} alt={currentMod.photoCaption} className="w-full h-full object-cover" />
+                    <div className="absolute bottom-3 left-3 bg-black/60 backdrop-blur-md border border-white/20 text-white text-[10px] font-mono font-bold px-3 py-1 rounded-full">
+                      {currentMod.photoCaption}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* ARCHETYPE TYPE B: 2-Card Dual Split Compare [Module 02 & Module 04] */}
+              {currentMod.layoutType === 'split_2' && (
+                <div className="space-y-4">
+                  <div className="space-y-3">
+                    {currentMod.cards.map((card, idx) => {
+                      const isNegative = card.tagType === 'negative';
+                      const isWarning = card.tagType === 'warning';
+                      return (
+                        <div
+                          key={idx}
+                          className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-5 border border-slate-200/90 shadow-[0_2px_8px_rgba(0,0,0,0.03)] space-y-2.5"
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="text-[10px] sm:text-[11px] font-mono tracking-widest text-slate-400 uppercase font-bold">
+                              {card.label}
+                            </span>
+                            {card.tag && (
+                              <span className={`text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-full uppercase ${
+                                isNegative
+                                  ? 'bg-rose-100 text-rose-800'
+                                  : isWarning
+                                  ? 'bg-amber-100 text-amber-800'
+                                  : 'bg-emerald-100 text-emerald-800'
+                              }`}>
+                                {card.tag}
+                              </span>
+                            )}
+                          </div>
+
+                          <h3 className="text-base sm:text-lg font-extrabold text-slate-900 leading-snug">
+                            {card.value}
+                          </h3>
+
+                          <p className="text-xs text-slate-600 font-medium leading-relaxed">
+                            {card.subtext}
+                          </p>
+
+                          {card.why && (
+                            <div className="pt-2 border-t border-slate-100 text-xs text-slate-500 font-medium">
+                              <span className="font-bold text-slate-700">Rationale: </span>
+                              {card.why}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Station Photo */}
+                  <div className="rounded-2xl sm:rounded-3xl overflow-hidden border border-slate-200 shadow-sm relative h-48 sm:h-52 w-full">
+                    <img src={currentMod.photoUrl} alt={currentMod.photoCaption} className="w-full h-full object-cover" />
+                    <div className="absolute bottom-3 left-3 bg-black/60 backdrop-blur-md border border-white/20 text-white text-[10px] font-mono font-bold px-3 py-1 rounded-full">
+                      {currentMod.photoCaption}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* ARCHETYPE TYPE C: 3-Card Sequential Flow [Module 03] */}
+              {currentMod.layoutType === 'sequence_3' && (
+                <div className="space-y-4">
+                  <div className="space-y-3">
+                    {currentMod.cards.map((card, idx) => (
+                      <div
+                        key={idx}
+                        className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-5 border border-slate-200/90 shadow-[0_2px_8px_rgba(0,0,0,0.03)] flex items-start gap-3.5"
+                      >
+                        <div className="w-8 h-8 rounded-xl bg-black text-white flex items-center justify-center text-xs font-mono font-extrabold shrink-0 mt-0.5">
+                          {card.tag || `0${idx + 1}`}
+                        </div>
+                        <div className="flex-1 min-w-0 space-y-1">
+                          <span className="text-[10px] sm:text-[11px] font-mono tracking-widest text-slate-400 uppercase font-bold block">
+                            {card.label}
+                          </span>
+                          <h4 className="text-sm sm:text-base font-extrabold text-slate-900 leading-snug">
+                            {card.value}
+                          </h4>
+                          <p className="text-xs text-slate-600 font-medium leading-relaxed">
+                            {card.subtext}
+                          </p>
+                          {card.why && (
+                            <p className="text-[11px] text-slate-500 font-medium pt-1">
+                              <span className="font-bold text-slate-700">Why it matters: </span>
+                              {card.why}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Workflow Station Photo */}
+                  <div className="rounded-2xl sm:rounded-3xl overflow-hidden border border-slate-200 shadow-sm relative h-48 sm:h-52 w-full">
+                    <img src={currentMod.photoUrl} alt={currentMod.photoCaption} className="w-full h-full object-cover" />
+                    <div className="absolute bottom-3 left-3 bg-black/60 backdrop-blur-md border border-white/20 text-white text-[10px] font-mono font-bold px-3 py-1 rounded-full">
+                      {currentMod.photoCaption}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* ARCHETYPE TYPE D: Photo-Hero Focal + 2 Trap Warning Cards [Module 05] */}
+              {currentMod.layoutType === 'hero_photo_traps' && (
+                <div className="space-y-4">
+                  {/* Large Equipment Photo at Top with Hazard Warning Badge */}
+                  <div className="rounded-2xl sm:rounded-3xl overflow-hidden border border-slate-200 shadow-sm relative h-52 sm:h-56 w-full">
+                    <img src={currentMod.photoUrl} alt={currentMod.photoCaption} className="w-full h-full object-cover" />
+                    <div className="absolute top-3 left-3 bg-rose-600 text-white font-mono text-[11px] font-bold px-3 py-1.5 rounded-full shadow-sm shadow-rose-600/30 flex items-center gap-1.5">
+                      <span>⚠️ High-Risk Boundary Zone</span>
+                    </div>
+                    <div className="absolute bottom-3 left-3 bg-black/60 backdrop-blur-md border border-white/20 text-white text-[10px] font-mono font-bold px-3 py-1 rounded-full">
+                      {currentMod.photoCaption}
+                    </div>
+                  </div>
+
+                  {/* 2 Warning Cards */}
+                  <div className="space-y-3">
+                    {currentMod.cards.map((card, idx) => (
+                      <div
+                        key={idx}
+                        className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-5 border border-rose-200 shadow-[0_2px_8px_rgba(0,0,0,0.03)] space-y-2 relative overflow-hidden"
+                      >
+                        <div className="flex items-center gap-2 text-rose-600">
+                          <AlertTriangle size={15} />
+                          <span className="text-[10px] sm:text-[11px] font-mono tracking-widest text-rose-600 uppercase font-bold">
+                            {card.label}
+                          </span>
+                        </div>
+
+                        <h4 className="text-sm sm:text-base font-extrabold text-slate-900 leading-snug">
+                          {card.value}
+                        </h4>
+
+                        <p className="text-xs text-slate-600 font-medium leading-relaxed">
+                          {card.subtext}
+                        </p>
+
+                        {card.consequence && (
+                          <div className="p-2.5 rounded-xl bg-rose-50 border border-rose-100 text-xs font-semibold text-rose-900">
+                            <span className="font-bold">Consequence: </span>
+                            {card.consequence}
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
                 </div>
-              </div>
-            </div>
-          )}
+              )}
 
-          {/* MODULE 02: UNDERSTAND (Foundational Concepts & Principles) */}
-          {activeModule === 2 && (
-            <div className="space-y-4 animate-in fade-in duration-300">
-              {rawConcepts.map((concept, idx) => (
-                <div key={idx} className="bg-white rounded-3xl p-5 text-slate-900 shadow-xl border border-slate-200/80 space-y-3.5">
-                  
-                  {/* Picture Banner with Bottom-Left Overlay Badge */}
-                  <div className="relative rounded-2xl overflow-hidden h-44 sm:h-48 w-full border border-slate-200">
-                    <img
-                      src={findBestVisualMatch(concept.title, sopTitle).url || heroImage}
-                      alt={concept.title}
-                      className="w-full h-full object-cover"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-                    <div className="absolute bottom-3 left-3 px-3 py-1 rounded-full bg-black/60 backdrop-blur-md border border-white/20 text-white text-[11px] font-mono font-bold">
-                      {concept.imageLabel}
-                    </div>
-                  </div>
-
-                  {/* Concept Kicker & Section Citation */}
-                  <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-black tracking-wider text-purple-700 uppercase">
-                      {concept.tag}
-                    </span>
-                    <span className="text-xs text-slate-400 font-semibold">
-                      Section 3.{idx + 1}
-                    </span>
-                  </div>
-
-                  {/* Title & Description */}
-                  <div>
-                    <h3 className="text-base font-black text-slate-900 leading-snug">
-                      {concept.title}
-                    </h3>
-                    <p className="text-xs font-medium text-slate-600 mt-1 leading-relaxed">
-                      {concept.subtitle}
-                    </p>
-                  </div>
-
-                  {/* Operational Rationale Box */}
-                  <div className="pt-2 border-t border-slate-100">
-                    <span className="text-[10px] font-extrabold text-slate-500 uppercase tracking-widest block mb-1">
-                      OPERATIONAL RATIONALE
-                    </span>
-                    <p className="text-xs font-bold text-slate-800 leading-relaxed bg-slate-50 border border-slate-100 rounded-xl p-3">
-                      {concept.why}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* MODULE 03: VISUALISE (Process Flows & Sequential Milestones) */}
-          {activeModule === 3 && (
-            <div className="space-y-4 animate-in fade-in duration-300">
-              <div className="bg-white rounded-3xl p-5 text-slate-900 shadow-xl border border-slate-200/80 space-y-4">
-                
-                {/* Header Picture Banner */}
-                <div className="relative rounded-2xl overflow-hidden h-44 sm:h-48 w-full border border-slate-200">
-                  <img
-                    src={findBestVisualMatch('process flow warehouse step checkpoint', sopTitle).url || heroImage}
-                    alt="Process Flow"
-                    className="w-full h-full object-cover"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-                  <div className="absolute bottom-3 left-3 px-3 py-1 rounded-full bg-black/60 backdrop-blur-md border border-white/20 text-white text-[11px] font-mono font-bold">
-                    Three-Stage Barrier & Sequential Flow
-                  </div>
-                </div>
-
-                {/* Milestone Node Timeline */}
-                <div className="space-y-3">
-                  <span className="text-[11px] font-black tracking-widest text-slate-400 uppercase block">
-                    SEQUENTIAL EXECUTION ORDER
-                  </span>
-
-                  {rawFlowSteps.map((stepItem, idx) => (
-                    <div key={idx} className="flex items-start gap-3 p-3.5 rounded-2xl bg-slate-50 border border-slate-100 hover:border-indigo-400 transition-all">
-                      <div className="w-8 h-8 rounded-xl bg-slate-900 text-white flex items-center justify-center text-xs font-black shrink-0 shadow-sm">
-                        {stepItem.stepNum}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between mb-0.5">
-                          <span className="text-[10px] font-extrabold uppercase tracking-wider text-indigo-600">
-                            {stepItem.category}
-                          </span>
-                          <span className="text-[10px] text-slate-400 font-mono">Phase {idx + 1}</span>
-                        </div>
-                        <h4 className="text-xs font-bold text-slate-900 leading-snug">
-                          {stepItem.title}
-                        </h4>
-                        <p className="text-[11px] font-medium text-slate-600 mt-1">
-                          <span className="font-bold text-slate-700">Rationale: </span>
-                          {stepItem.why}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* MODULE 04: APPLY (Operational Scenarios & Practice) */}
-          {activeModule === 4 && (
-            <div className="space-y-4 animate-in fade-in duration-300">
-              {rawScenarios.map((scenario, idx) => (
-                <div key={idx} className="bg-white rounded-3xl p-5 text-slate-900 shadow-xl border border-slate-200/80 space-y-3.5">
-                  
-                  {/* Picture Banner with Bottom-Left Caption */}
-                  <div className="relative rounded-2xl overflow-hidden h-44 sm:h-48 w-full border border-slate-200">
-                    <img
-                      src={findBestVisualMatch(scenario.title, sopTitle).url || heroImage}
-                      alt={scenario.title}
-                      className="w-full h-full object-cover"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-                    <div className="absolute bottom-3 left-3 px-3 py-1 rounded-full bg-black/60 backdrop-blur-md border border-white/20 text-white text-[11px] font-mono font-bold">
-                      {scenario.imageLabel}
-                    </div>
-                  </div>
-
-                  {/* Scenario Kicker */}
-                  <span className="text-[11px] font-black tracking-wider text-blue-700 uppercase block">
-                    LIVE FIELD SCENARIO 0{idx + 1}
-                  </span>
-
-                  <div>
-                    <h3 className="text-sm font-black text-slate-900 leading-snug">
-                      {scenario.title}
-                    </h3>
-                  </div>
-
-                  {/* Compliant Standard Response */}
-                  <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-3.5 space-y-1">
-                    <span className="text-[10px] font-black uppercase tracking-wider text-emerald-800 block">
-                      MANDATORY OPERATIONAL ACTION
-                    </span>
-                    <p className="text-xs font-bold text-emerald-950 leading-relaxed">
-                      {scenario.action}
-                    </p>
-                  </div>
-
-                  {/* Verification Rule */}
-                  <div className="pt-2 border-t border-slate-100">
-                    <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block mb-1">
-                      AUDIT SPECIFICATION
-                    </span>
-                    <p className="text-xs font-medium text-slate-600">
-                      {scenario.rationale}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* MODULE 05: AVOID ERRORS (Mistakes, Exceptions & Consequences) */}
-          {activeModule === 5 && (
-            <div className="space-y-4 animate-in fade-in duration-300">
-              {rawMistakes.map((mistakeItem, idx) => (
-                <div key={idx} className="bg-white rounded-3xl p-5 text-slate-900 shadow-xl border border-slate-200/80 space-y-3.5 relative overflow-hidden">
-                  
-                  {/* Red Alert Indicator Stripe on Left */}
-                  <div className="absolute top-0 left-0 bottom-0 w-1.5 bg-rose-500" />
-
-                  {/* Picture Banner with Bottom-Left Caption */}
-                  <div className="relative rounded-2xl overflow-hidden h-44 sm:h-48 w-full border border-slate-200">
-                    <img
-                      src={findBestVisualMatch('safety violation warning hazard spill', sopTitle).url || heroImage}
-                      alt="Mistake Warning"
-                      className="w-full h-full object-cover"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-                    <div className="absolute bottom-3 left-3 px-3 py-1 rounded-full bg-rose-950/80 backdrop-blur-md border border-rose-500/40 text-rose-200 text-[11px] font-mono font-bold">
-                      {mistakeItem.imageLabel}
-                    </div>
-                  </div>
-
-                  {/* Kicker */}
-                  <div className="flex items-center gap-1.5 text-rose-600">
-                    <AlertTriangle size={15} />
-                    <span className="text-[11px] font-black tracking-wider uppercase">
-                      CRITICAL FAILURE MODE 0{idx + 1}
-                    </span>
-                  </div>
-
-                  {/* The Mistake */}
-                  <div>
-                    <h3 className="text-sm font-black text-rose-900 leading-snug">
-                      {mistakeItem.mistake}
-                    </h3>
-                  </div>
-
-                  {/* Prevention Directive */}
-                  <div className="bg-slate-50 border border-slate-200 rounded-2xl p-3.5 space-y-1">
-                    <span className="text-[10px] font-black uppercase tracking-wider text-slate-700 block">
-                      REQUIRED CORRECTIVE ACTION
-                    </span>
-                    <p className="text-xs font-bold text-slate-900 leading-relaxed">
-                      {mistakeItem.prevention}
-                    </p>
-                  </div>
-
-                  {/* Severe Consequence */}
-                  <div className="bg-rose-50/80 border border-rose-200 rounded-xl p-3">
-                    <span className="text-[10px] font-black text-rose-800 uppercase tracking-wider block">
-                      CONSEQUENCE OF NON-COMPLIANCE
-                    </span>
-                    <p className="text-xs font-semibold text-rose-950 mt-0.5">
-                      {mistakeItem.consequence}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* MODULE 06: REINFORCE (Key Takeaways & Certification Readiness) */}
-          {activeModule === 6 && (
-            <div className="space-y-4 animate-in fade-in duration-300">
-              <div className="bg-white rounded-3xl p-5 text-slate-900 shadow-xl border border-slate-200/80 space-y-4">
-                
-                {/* Picture Banner with Bottom-Left Caption */}
-                <div className="relative rounded-2xl overflow-hidden h-44 sm:h-48 w-full border border-slate-200">
-                  <img
-                    src={findBestVisualMatch('quality check complete certificate worker', sopTitle).url || heroImage}
-                    alt="Takeaways"
-                    className="w-full h-full object-cover"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-                  <div className="absolute bottom-3 left-3 px-3 py-1 rounded-full bg-emerald-950/80 backdrop-blur-md border border-emerald-500/40 text-emerald-200 text-[11px] font-mono font-bold">
-                    Operational Knowledge & Certification Readiness
-                  </div>
-                </div>
-
-                <span className="text-[11px] font-black tracking-widest text-slate-400 uppercase block">
-                  3 GOLDEN RULES TO MEMORIZE
-                </span>
-
-                <div className="space-y-2.5">
-                  {rawTakeaways.map((takeaway, i) => (
-                    <div key={i} className="flex items-start gap-3 p-3.5 bg-emerald-50/80 border border-emerald-200 rounded-2xl">
-                      <div className="w-6 h-6 rounded-lg bg-emerald-600 text-white flex items-center justify-center text-xs font-black shrink-0 mt-0.5">
-                        {i + 1}
-                      </div>
-                      <p className="text-xs font-bold text-emerald-950 leading-relaxed">
-                        {takeaway}
+              {/* ARCHETYPE TYPE E: 2-Card Scorecard Banner + Direct Simulation CTA [Module 06] */}
+              {currentMod.layoutType === 'scorecard_cta' && (
+                <div className="space-y-4">
+                  {/* 2 Wide Metric Banners */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 shadow-xs">
+                      <span className="text-[10px] sm:text-[11px] font-mono tracking-widest text-emerald-800 uppercase font-bold block mb-1">
+                        MINIMUM QUALIFICATION SCORE
+                      </span>
+                      <span className="text-2xl sm:text-3xl font-black font-mono text-emerald-950 tracking-tight block">
+                        85% Minimum Pass
+                      </span>
+                      <p className="text-xs text-emerald-800 font-medium mt-1">
+                        Baseline required before shift sign-off.
                       </p>
                     </div>
-                  ))}
-                </div>
 
-                <div className="pt-2 border-t border-slate-100 text-center">
-                  <span className="text-xs font-bold text-slate-500 block">
-                    You have mastered all 6 modules of this SOP.
-                  </span>
-                  <p className="text-[11px] text-slate-400 mt-0.5">
-                    Ready to witness live frontline demonstration with Guruji.
-                  </p>
+                    <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 shadow-xs">
+                      <span className="text-[10px] sm:text-[11px] font-mono tracking-widest text-amber-800 uppercase font-bold block mb-1">
+                        CRITICAL SAFETY TOLERANCE
+                      </span>
+                      <span className="text-2xl sm:text-3xl font-black font-mono text-amber-950 tracking-tight block">
+                        0 Critical Violations
+                      </span>
+                      <p className="text-xs text-amber-800 font-medium mt-1">
+                        Zero safety boundary breaches permitted.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Floor Supervisor Verification Photo */}
+                  <div className="rounded-2xl sm:rounded-3xl overflow-hidden border border-slate-200 shadow-sm relative h-40 sm:h-44 w-full">
+                    <img src={currentMod.photoUrl} alt={currentMod.photoCaption} className="w-full h-full object-cover" />
+                    <div className="absolute bottom-3 left-3 bg-black/60 backdrop-blur-md border border-white/20 text-white text-[10px] font-mono font-bold px-3 py-1 rounded-full">
+                      {currentMod.photoCaption}
+                    </div>
+                  </div>
+
+                  {/* Active Readiness Confirmation Card */}
+                  <div className="bg-white rounded-2xl p-4 border border-slate-200/90 shadow-xs flex items-center gap-3">
+                    <ShieldCheck className="w-8 h-8 text-emerald-600 shrink-0" />
+                    <div>
+                      <h4 className="text-xs font-bold text-slate-900">Module Readiness Qualified</h4>
+                      <p className="text-xs text-slate-500 font-normal">You are ready to attempt the frontline simulation.</p>
+                    </div>
+                  </div>
+
+                  {/* Direct Action CTA Button */}
+                  <button
+                    onClick={() => {
+                      sounds.playTap();
+                      if (onComplete) {
+                        onComplete();
+                      } else {
+                        onClose();
+                      }
+                    }}
+                    className="w-full py-4 px-6 bg-black hover:bg-slate-800 text-white font-bold text-sm rounded-full shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98]"
+                  >
+                    <span>Start Practice Simulation →</span>
+                  </button>
                 </div>
-              </div>
+              )}
+
             </div>
-          )}
-          </>
           )}
 
         </div>
 
-        {/* FIXED FOOTER CONTROLS: PREVIOUS / NEXT */}
-        <div className="p-4 bg-[#0A0E1A]/95 backdrop-blur-xl border-t border-white/10 flex items-center justify-between gap-3 shrink-0">
+        {/* FOOTER NAVIGATION CONTROLS */}
+        <div className="p-4 bg-white border-t border-slate-200 flex items-center justify-between gap-3 shrink-0">
           <button
             onClick={handlePrevModule}
-            className="px-4 py-2.5 rounded-full border border-white/15 bg-white/5 hover:bg-white/10 text-white text-xs font-bold transition-all active:scale-95 cursor-pointer flex items-center gap-1.5"
+            className="px-4 py-2.5 rounded-full border border-slate-300 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition-all active:scale-95 cursor-pointer flex items-center gap-1.5"
           >
             <ArrowLeft size={14} />
             <span>{activeModule === 1 ? 'Cover' : 'Previous'}</span>
           </button>
 
-          {/* Module Step Indicator Dots */}
+          {/* Progress dots */}
           <div className="flex items-center gap-1.5">
             {[1, 2, 3, 4, 5, 6].map((m) => (
               <span
@@ -976,8 +837,8 @@ export function ExperiencePlayer({
                 }}
                 className={`h-1.5 rounded-full transition-all duration-300 cursor-pointer ${
                   m === activeModule
-                    ? 'w-5 bg-indigo-500 shadow-sm shadow-indigo-500/50'
-                    : 'w-1.5 bg-white/20 hover:bg-white/40'
+                    ? 'w-5 bg-black shadow-xs'
+                    : 'w-1.5 bg-slate-300 hover:bg-slate-400'
                 }`}
               />
             ))}
@@ -985,9 +846,9 @@ export function ExperiencePlayer({
 
           <button
             onClick={handleNextModule}
-            className="px-5 py-2.5 rounded-full bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white text-xs font-bold shadow-lg shadow-indigo-600/30 transition-all active:scale-95 cursor-pointer flex items-center gap-1.5"
+            className="px-5 py-2.5 rounded-full bg-black hover:bg-slate-800 text-white text-xs font-bold shadow-md transition-all active:scale-95 cursor-pointer flex items-center gap-1.5"
           >
-            <span>{activeModule === 6 ? 'Continue to Show Me' : `Next: ${MODULES[activeModule]?.name || 'Next'}`}</span>
+            <span>{activeModule === 6 ? 'Start Practice →' : `Next: ${bentoModules[activeModule]?.tabLabel || 'Next'}`}</span>
             <ArrowRight size={14} />
           </button>
         </div>

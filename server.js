@@ -147,7 +147,8 @@ function clusterStepsIntoScenes(steps) {
     }
     if (currentGroup.length === 0) {
       currentPhase = stepPhase;
-      currentTitle = step.task_title || `Scene ${clusters.length + 1}: ${stepPhase.replace(/_/g, " ")}`;
+      const cleanPhaseName = stepPhase.charAt(0).toUpperCase() + stepPhase.slice(1).replace(/_/g, " ");
+      currentTitle = step.task_title || (step.instruction ? step.instruction.trim().slice(0, 45) : `${cleanPhaseName} Part ${clusters.length + 1}`);
     }
     currentGroup.push(step);
   }
@@ -593,7 +594,7 @@ function planVideoDemonstration(blueprint) {
     const clipDuration = 8;
     let distinctTitle = primaryTaskTitle;
     if (plannedClips.some((p) => p.title.toLowerCase() === distinctTitle.toLowerCase())) {
-      distinctTitle = `Scene ${sceneIndex}: ${distinctTitle}`;
+      distinctTitle = `${primaryTaskTitle} (Part ${sceneIndex})`;
     }
     plannedClips.push({
       clip_index: sceneIndex,
@@ -1517,8 +1518,33 @@ function getGeminiClient(req) {
     }
   });
 }
-var MODEL_PRO = process.env.GEMINI_PRO_MODEL || "gemini-3.1-pro-preview";
-var MODEL_FAST = process.env.GEMINI_FAST_MODEL || "gemini-3.8-flash";
+var MODEL_PRO = process.env.GEMINI_PRO_MODEL || "gemini-3.8-flash";
+var MODEL_FAST = process.env.GEMINI_FAST_MODEL || "gemini-3.1-flash-lite";
+async function generateContentWithFallback(aiClient, params) {
+  const modelsToTry = [
+    params.preferredModel,
+    MODEL_PRO,
+    MODEL_FAST,
+    "gemini-3.8-flash",
+    "gemini-3.1-flash-lite",
+    "gemini-flash-latest"
+  ].filter((m, idx, arr) => Boolean(m) && arr.indexOf(m) === idx);
+  let lastErr = null;
+  for (const model of modelsToTry) {
+    try {
+      const response = await aiClient.models.generateContent({
+        model,
+        contents: params.contents,
+        ...params.config ? { config: params.config } : {}
+      });
+      return response;
+    } catch (err) {
+      lastErr = err;
+      console.warn(`[Gemini Fallback] Model '${model}' failed:`, err?.message || err);
+    }
+  }
+  throw lastErr;
+}
 app.get("/api/health", (_req, res) => {
   const key = getApiKey();
   res.json({
@@ -1602,25 +1628,12 @@ Do NOT summarize. Return JSON:
   "pageCount": estimated total pages as integer,
   "wordCount": estimated total words as integer
 }`;
-    let response;
-    try {
-      response = await aiClient.models.generateContent({
-        model: MODEL_PRO,
-        contents: { parts: [docPart, { text: prompt }] },
-        config: {
-          responseMimeType: "application/json"
-        }
-      });
-    } catch (primaryErr) {
-      console.warn(`[Server PDF Extract] Primary model ${MODEL_PRO} failed, trying ${MODEL_FAST}:`, primaryErr?.message);
-      response = await aiClient.models.generateContent({
-        model: MODEL_FAST,
-        contents: { parts: [docPart, { text: prompt }] },
-        config: {
-          responseMimeType: "application/json"
-        }
-      });
-    }
+    const response = await generateContentWithFallback(aiClient, {
+      contents: { parts: [docPart, { text: prompt }] },
+      config: {
+        responseMimeType: "application/json"
+      }
+    });
     const outputText = response.text || "";
     let cleanJson = outputText.trim();
     if (cleanJson.startsWith("```json")) {
@@ -1646,7 +1659,7 @@ Do NOT summarize. Return JSON:
 });
 app.post("/api/gemini/generate-blueprint", async (req, res) => {
   try {
-    const { rawText, fileBase64, mimeType, filename, fileHash, pageCount, wordCount, instructMode, selectedOptionId, customInstruction } = req.body;
+    const { rawText, fileBase64, mimeType, filename, fileHash, pageCount, wordCount } = req.body;
     const aiClient = getGeminiClient(req);
     if (!aiClient) {
       console.warn("[Server /api/gemini/generate-blueprint] No Gemini API key found in environment.");
@@ -1689,47 +1702,46 @@ SOP \u2192 analyse through 8 stages \u2192 identify meaningful content \u2192 re
 - Do NOT invent content to fill a stage.
 - The 8 stages control the Brain's thinking and sequencing; the SOP controls the actual content.
 
-CRITICAL ARCHITECTURAL RULES:
-1. CONCISE WORKPLACE LANGUAGE (NO RAW TEXT DUMPS):
+CRITICAL ARCHITECTURAL & INSTRUCTIONAL DESIGN RULES:
+1. INSTRUCTIONAL GROUPING (COHERENT TEACHING UNITS):
+   - Do NOT output raw 1:1 line-item dumps for every bullet point in the SOP text.
+   - Group related routine steps into coherent operational teaching units (e.g., Customer & Order Verification, Item Eligibility Inspection, Acceptance/Rejection Decision, Exception & Dispute Handling).
+   - A complex SOP should synthesize into distinct, high-impact operational steps rather than a mechanical list of cards.
+2. VISUAL PRESENTATION TYPE SELECTION (component):
+   - Assign an appropriate interactive presentation mode for EACH operational step:
+     * "code_match": For verifying or matching order ID, return ID, serial/IMEI number, barcode, or SKU code.
+     * "photo_hotspot": For inspecting physical item condition, tamper seals, liquid damage, or packaging flaws.
+     * "scene_pick": For right-vs-wrong visual comparisons (e.g. valid vs invalid return condition).
+     * "number_choice": For quantities, unit counts, wait times, or measurements.
+     * "choice_list": For general operational decisions, verbal protocols, or exception escalation routing.
+3. CONCISE WORKPLACE LANGUAGE (NO RAW TEXT DUMPS):
    - NEVER output long, run-on paragraph sentences concatenating multiple SOP lines.
    - Summarize every choice title into a crisp, COMPLETE, 5-12 word action statement written in natural workplace language.
    - NEVER end a choice title on a dangling conjunction or preposition (e.g., 'and', 'or', 'to', 'with', 'for'). Ensure every title is a full, grammatically complete action phrase.
    - Keep scenario questions under 2 concise sentences focused on a single execution dilemma.
-2. DEEP REALISM & UNCOMPROMISING SPECIFICITY:
+4. DEEP REALISM & UNCOMPROMISING SPECIFICITY:
    - Ground ALL extractions strictly in the operational facts of the provided SOP document.
-   - Extract the TRUE frontline role (e.g. Quick Commerce Picker, Phlebotomist, Residential Housekeeping Specialist, Retail Cashier, Primary School Teacher, Aviation Gate Agent).
-   - Every scenario question must put the worker in a concrete, high-stakes operational situation directly based on the SOP details (specific equipment, classroom prep, barcodes, shelf codes, temperatures, error codes, edge cases, exceptions).
-   - NEVER generate generic questions like "What is your required action?" or "How should you complete this task?" or "Before taking the next step, what details must you verify?".
+   - Extract the TRUE frontline role (e.g. Pickup Associate, Delivery Partner, Quick Commerce Picker, Phlebotomist, Retail Cashier).
+   - Every scenario question must put the worker in a concrete, high-stakes operational situation directly based on the SOP details.
+   - NEVER generate generic questions like "What is your required action?" or "How should you complete this task?".
    - NEVER generate generic choices like "Skip step and proceed" or "Use unverified shortcut". Create REALISTIC frontline errors, tempting shortcuts, and common mistakes that real workers actually make on the floor!
-3. THREE NUANCED CHOICES WITH EXPLICIT FAILURE MODES:
+5. THREE NUANCED CHOICES WITH EXPLICIT FAILURE MODES:
    - For EACH operational step, you MUST generate exactly 3 nuanced choices with short, complete, clear titles (5 to 12 words):
      * Choice 1 (isCorrect: true): Concise, complete, compliant SOP action title. Subtitle explaining why this is correct per SOP.
-     * Choice 2 (isCorrect: false): Concise, complete, tempting operational shortcut title. Subtitle explicitly details the failure consequence (e.g., inventory mismatch, customer complaint, safety hazard).
+     * Choice 2 (isCorrect: false): Concise, complete, tempting operational shortcut title. Subtitle explicitly details the failure consequence.
      * Choice 3 (isCorrect: false): Concise, complete, unapproved workaround title. Subtitle details the regulatory, safety, or quality violation.
-3. EXPERT COACH TIPS, SPECIFIC HINTS & LUCIDE VECTOR ICONS:
-   - coach_tip: Guruji's practical wisdom directly referencing the subtle details, pitfalls, or mnemonic tips from the SOP.
-   - hint: Specific reference to the SOP document section, visual cues, or indicators.
-   - target_code: Authentic code extracted from or reflecting the SOP (e.g., LOC-A02-04, SKU-88421, FORM-Q7).
-   - icon_key: Assign a domain-appropriate, clean Lucide vector icon key for each operational step, tool, and safety rule (e.g., ShieldAlert, ScanBarcode, Thermometer, Microscope, Boxes, FileCheck, Droplets, Sparkles, SprayCan, Syringe, ClipboardCheck, Users, CheckCircle, AlertTriangle, Zap, Scale, Truck, Lock, Settings). Match the icon meaningfully to the operational step \u2014 no arbitrary overfitting or underfitting.
-5. METADATA VS OPERATIONAL CONTENT:
-   - METADATA (DO NOT MAKE INTO STEPS): Administrative headers, document approval tables, version histories, ISO reference codes.
+6. EXPERT COACH TIPS, SPECIFIC HINTS & LUCIDE VECTOR ICONS:
+   - coach_tip: Guruji's practical wisdom directly referencing subtle details or compliance wisdom from the SOP.
+   - hint: Specific clue pointing directly to the relevant section or physical indicator in the SOP.
+   - target_code: Authentic code extracted from or reflecting the SOP (e.g., RET-PU-001, SKU-88421, FORM-Q7).
+   - icon_key: Assign a domain-appropriate, clean Lucide vector icon key for each operational step.
+7. METADATA VS OPERATIONAL CONTENT:
+   - METADATA (DO NOT MAKE INTO STEPS): Administrative headers, document approval tables, version histories.
    - OPERATIONAL CONTENT (MUST DRIVE BLUEPRINT): Physical actions, system entries, verbal communications, verifications, decision points, exception handling, escalations.
-6. AI VIDEO DIRECTOR RULES FOR VEO 3.2 LITE:
-   For every clip in video_demonstration_plan.clips, formulate the "veo_prompt" as a dense 65-85 word single cinematic sentence following:
-   [Visual Style] + [Detailed Subject with Active Continuous Movement] + [Enriched Background Environment] + [Studio Lighting/Mood] + [Continuous Camera Tracking]
-   - BACKGROUND ENRICHMENT: Always build a detailed, authentic physical workspace (e.g. sleek executive conference suite with frosted acoustic glass partitions, sterile clinical preparation bench with specimen centrifuge racks, modern retail checkout counter, organized staging aisle). Never leave the background blank or abstract.
-   - PACING & CONTINUOUS MOVEMENT: Use active progressive verbs (e.g., "steadily reviewing and logging", "methodically cross-verifying", "carefully inspecting with deliberate hand movements"). Actions must be continuous, steady-state, or looping to prevent abrupt cutoffs at the 8-second mark.
-   - BAN COMPLETION VERBS: Do not use verbs indicating an end state (e.g., 'closes the laptop', 'presses the button', 'sits down'). Instead mandate continuous progressive action states (e.g., 'the laptop remains open as data flows', 'finger holding down the button safely', 'seated stationary while analyzing').
-   - CAMERA WORK: End every prompt with fluid continuous camera motion (e.g., "slow cinematic lateral tracking shot gently drifting leftward", "subtle continuous forward camera drift maintaining steady focal depth").
-7. MANDATORY OUTPUT FORMAT: Respond strictly with valid, un-truncated JSON conforming to the requested schema.`;
-    const instructGuidance = instructMode ? `
-INSTRUCT MODE GUIDANCE:
-Selected Structure Option ID: ${selectedOptionId || "default"}
-User Custom Instruction: "${customInstruction || "Emphasize document-grounded operational structure"}"
-Prioritize and tailor task decomposition and focus areas according to this guidance while adhering strictly to source facts (no invention).
-` : "";
+8. AI VIDEO DIRECTOR RULES FOR VEO 3.2 LITE:
+   For every clip in video_demonstration_plan.clips, formulate the "veo_prompt" as a dense 65-85 word single cinematic sentence.
+9. MANDATORY OUTPUT FORMAT: Respond strictly with valid, un-truncated JSON conforming to the requested schema.`;
     const textPrompt = `Uploaded SOP Document: "${filename}" (${pageCount || 1} pages, ${wordCount || 100} words)
-${instructGuidance}
 ${docText ? `Document Text:
 """
 ${docText}
@@ -1744,8 +1756,8 @@ Extract the complete OPERATIONAL BLUEPRINT as JSON with this exact schema:
     "version": "Extracted version or empty",
     "department": "Extracted department or operations division"
   },
-  "role": "Exact worker role described in SOP (e.g., Compliance Officer, Operations Associate, Retail Cashier, Technician)",
-  "process": "Exact core operational process (e.g., Incident Intake & Logging, Order Fulfillment, Blood Sample Collection)",
+  "role": "Exact worker role described in SOP (e.g., Pickup Associate, Delivery Partner, Operations Associate)",
+  "process": "Exact core operational process (e.g., Return Pickup Workflow, Order Fulfillment)",
   "purpose": "1-2 sentence primary operational goal for the worker",
   "scope": "Applicable department or workspace boundaries",
   "prerequisites": [
@@ -1759,8 +1771,9 @@ Extract the complete OPERATIONAL BLUEPRINT as JSON with this exact schema:
   ],
   "operational_steps": [
     {
-      "instruction": "Specific, clear workplace action grounded in the SOP (e.g., Verify tote barcode against PDA screen before placing picked items)",
+      "instruction": "Specific, clear workplace action grounded in the SOP",
       "category": "DO" | "CHECK" | "KNOW" | "DECIDE" | "RESPOND" | "RECOVER" | "ESCALATE",
+      "component": "code_match" | "photo_hotspot" | "scene_pick" | "number_choice" | "choice_list",
       "action_verb": "Primary action verb (e.g., Scan, Verify, Inspect, Place)",
       "task_title": "Concise 2-4 word operational action title (e.g., Scan Tote Barcode, Check Expiry Date, Inspect Packaging)",
       "target_code": "Realistic barcode / SKU / rack / equipment or form code from SOP (e.g., TOTE-B12, SKU-4029, LOC-A02-04)",
@@ -1842,31 +1855,15 @@ Extract the complete OPERATIONAL BLUEPRINT as JSON with this exact schema:
 
 The number of operational_steps must emerge naturally from the SOP's actual operational complexity. Do NOT force a fixed step count. A simple SOP should produce a concise task structure; a complex SOP must retain all distinct operational tasks without arbitrary truncation or merging.`;
     parts.push({ text: textPrompt });
-    let response;
-    try {
-      response = await aiClient.models.generateContent({
-        model: MODEL_PRO,
-        contents: { parts },
-        config: {
-          systemInstruction,
-          responseMimeType: "application/json",
-          maxOutputTokens: 32768,
-          temperature: 0.25
-        }
-      });
-    } catch (primaryErr) {
-      console.warn(`[Server LLM Blueprint] Primary model ${MODEL_PRO} failed, trying ${MODEL_FAST}:`, primaryErr?.message);
-      response = await aiClient.models.generateContent({
-        model: MODEL_FAST,
-        contents: { parts },
-        config: {
-          systemInstruction,
-          responseMimeType: "application/json",
-          maxOutputTokens: 32768,
-          temperature: 0.25
-        }
-      });
-    }
+    const response = await generateContentWithFallback(aiClient, {
+      contents: { parts },
+      config: {
+        systemInstruction,
+        responseMimeType: "application/json",
+        maxOutputTokens: 32768,
+        temperature: 0.25
+      }
+    });
     const outputText = response.text || "";
     if (!outputText.trim()) {
       return res.json({ success: false, useLocalGenerator: true, error: "Empty response received from LLM" });
@@ -1914,31 +1911,15 @@ app.post("/api/coach", async (req, res) => {
     }
     parts.push({ text: prompt });
     const contentsPayload = parts.length > 1 ? { parts } : prompt;
-    let response;
-    try {
-      response = await aiClient.models.generateContent({
-        model: MODEL_PRO,
-        contents: contentsPayload,
-        config: {
-          systemInstruction: systemInstruction || "You are an expert assistant. Respond strictly with valid JSON.",
-          responseMimeType: "application/json",
-          maxOutputTokens,
-          temperature
-        }
-      });
-    } catch (primaryErr) {
-      console.warn(`[Server /api/coach] Primary model ${MODEL_PRO} failed, trying fallback ${MODEL_FAST}:`, primaryErr?.message);
-      response = await aiClient.models.generateContent({
-        model: MODEL_FAST,
-        contents: contentsPayload,
-        config: {
-          systemInstruction: systemInstruction || "You are an expert assistant. Respond strictly with valid JSON.",
-          responseMimeType: "application/json",
-          maxOutputTokens,
-          temperature
-        }
-      });
-    }
+    const response = await generateContentWithFallback(aiClient, {
+      contents: contentsPayload,
+      config: {
+        systemInstruction: systemInstruction || "You are an expert assistant. Respond strictly with valid JSON.",
+        responseMimeType: "application/json",
+        maxOutputTokens,
+        temperature
+      }
+    });
     const rawText = response.text || "";
     if (!rawText.trim()) {
       return res.status(502).json({ error: "Empty response received from LLM" });
@@ -1962,6 +1943,137 @@ app.post("/api/coach", async (req, res) => {
     });
   }
 });
+app.post("/api/gemini/generate-image", async (req, res) => {
+  try {
+    const { prompt, title = "Workplace Procedure", category = "general" } = req.body;
+    if (!prompt) {
+      return res.status(400).json({ success: false, error: "Missing prompt" });
+    }
+    const aiClient = getGeminiClient(req);
+    let enhancedPrompt = prompt;
+    if (aiClient) {
+      try {
+        const directorResponse = await aiClient.models.generateContent({
+          model: "gemini-3.8-flash",
+          contents: `You are an expert industrial and workplace photographer. Convert this instructional concept into a detailed, photorealistic prompt for generating a workplace training photo.
+Concept: "${prompt}"
+SOP Context: "${title}"
+Domain: "${category}"
+
+Rules:
+1. Describe a realistic workplace scene with authentic natural lighting.
+2. Focus on the tools, equipment, or physical boundary in sharp focus with depth of field.
+3. Strictly real documentary workplace photography. No cartoon, no anime, no 3D render artifacts.
+4. Output ONLY the refined prompt text in 1-2 concise sentences.`
+        });
+        if (directorResponse.text && directorResponse.text.trim()) {
+          enhancedPrompt = directorResponse.text.trim();
+        }
+      } catch (e) {
+        console.warn("[Server Image Director] Gemini 3.8 Flash prompt enhancement fallback:", e?.message || e);
+      }
+      try {
+        if (typeof aiClient.models?.generateImages === "function") {
+          const imageRes = await aiClient.models.generateImages({
+            model: "imagen-3.0-generate-002",
+            prompt: enhancedPrompt,
+            config: {
+              numberOfImages: 1,
+              aspectRatio: "4:3",
+              outputMimeType: "image/jpeg"
+            }
+          });
+          if (imageRes?.generatedImages?.[0]?.image?.imageBytes) {
+            const base64 = imageRes.generatedImages[0].image.imageBytes;
+            return res.json({
+              success: true,
+              imageUrl: `data:image/jpeg;base64,${base64}`,
+              enhancedPrompt,
+              source: "ai_generated"
+            });
+          }
+        }
+      } catch (genErr) {
+        console.warn("[Server Imagen Generation] Imagen generation skipped or failed, falling back to library:", genErr?.message || genErr);
+      }
+    }
+    return res.json({
+      success: true,
+      enhancedPrompt,
+      source: "library_match",
+      url: `/Guruji_Real_Photo_Visual_Library_500/001_retail_store_front.webp`
+    });
+  } catch (err) {
+    console.error("[Server Image Generation Error]:", err);
+    return res.status(500).json({ success: false, error: err?.message || "Server image generation error" });
+  }
+});
+var REPOSITORY_DIR = path.join(process.cwd(), "data", "sop_repository");
+if (!fs.existsSync(REPOSITORY_DIR)) {
+  try {
+    fs.mkdirSync(REPOSITORY_DIR, { recursive: true });
+  } catch (err) {
+    console.warn("[Repository Init] Could not create repository dir:", err);
+  }
+}
+app.get("/api/repository/sops", (_req, res) => {
+  try {
+    if (!fs.existsSync(REPOSITORY_DIR)) {
+      return res.json({ success: true, sops: [] });
+    }
+    const files = fs.readdirSync(REPOSITORY_DIR).filter((f) => f.endsWith(".json"));
+    const sops = [];
+    for (const f of files) {
+      try {
+        const content = fs.readFileSync(path.join(REPOSITORY_DIR, f), "utf-8");
+        const parsed = JSON.parse(content);
+        if (parsed && parsed.id) {
+          sops.push(parsed);
+        }
+      } catch (readErr) {
+        console.warn(`[Repository Read Error] Failed reading ${f}:`, readErr);
+      }
+    }
+    return res.json({ success: true, sops });
+  } catch (err) {
+    console.error("[Repository GET Error]:", err);
+    return res.status(500).json({ success: false, error: err?.message || "Error fetching repository" });
+  }
+});
+app.post("/api/repository/sops", (req, res) => {
+  try {
+    const { lesson } = req.body;
+    if (!lesson || !lesson.id) {
+      return res.status(400).json({ success: false, error: "Invalid lesson payload: missing id" });
+    }
+    if (!fs.existsSync(REPOSITORY_DIR)) {
+      fs.mkdirSync(REPOSITORY_DIR, { recursive: true });
+    }
+    const safeId = String(lesson.id).replace(/[^a-zA-Z0-9_-]/g, "_");
+    const filePath = path.join(REPOSITORY_DIR, `${safeId}.json`);
+    fs.writeFileSync(filePath, JSON.stringify(lesson, null, 2), "utf-8");
+    console.log(`[Repository Save SUCCESS] Saved SOP '${lesson.title}' (${safeId}.json) to persistent repository.`);
+    return res.json({ success: true, id: lesson.id });
+  } catch (err) {
+    console.error("[Repository POST Error]:", err);
+    return res.status(500).json({ success: false, error: err?.message || "Error saving to repository" });
+  }
+});
+app.delete("/api/repository/sops/:id", (req, res) => {
+  try {
+    const { id } = req.params;
+    const safeId = String(id).replace(/[^a-zA-Z0-9_-]/g, "_");
+    const filePath = path.join(REPOSITORY_DIR, `${safeId}.json`);
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+      console.log(`[Repository Delete SUCCESS] Removed SOP ${safeId}.json`);
+    }
+    return res.json({ success: true, id });
+  } catch (err) {
+    console.error("[Repository DELETE Error]:", err);
+    return res.status(500).json({ success: false, error: err?.message || "Error deleting from repository" });
+  }
+});
 app.post("/api/sop/instruct-options", async (req, res) => {
   try {
     const { filename = "SOP Document", rawText = "", wordCount = 100, pageCount = 1 } = req.body;
@@ -1969,23 +2081,23 @@ app.post("/api/sop/instruct-options", async (req, res) => {
     const defaultOptions = [
       {
         id: "opt-standard",
-        title: "Standard Operational Flow",
+        title: "SOP Flow",
         description: "Balanced, step-by-step procedural training covering prerequisites, core execution, and verification.",
-        focusAreas: ["End-to-End Procedural Flow", "Task Verification", "Standard Operations"],
+        focusAreas: ["End-to-End Procedural Flow", "Task Verification"],
         recommendedSteps: 5
       },
       {
         id: "opt-controls-exceptions",
-        title: "Critical Controls & Edge Cases",
+        title: "Critical Controls",
         description: "Emphasizes high-stakes safety rules, decision criteria, exception handling, and escalation protocols.",
-        focusAreas: ["Critical Safety Controls", "Exception Recovery", "Escalations"],
+        focusAreas: ["Critical Safety Controls", "Exception Recovery"],
         recommendedSteps: 6
       },
       {
         id: "opt-fast-track",
-        title: "Fast-Track Field Drill",
+        title: "Fast Track",
         description: "Concise, high-velocity frontline drill focusing strictly on core physical and system actions.",
-        focusAreas: ["Core Action Verbs", "Fast Field Execution", "Target Barcodes/Codes"],
+        focusAreas: ["Core Action Verbs", "Fast Field Execution"],
         recommendedSteps: 4
       }
     ];
@@ -2011,8 +2123,7 @@ Return JSON:
     }
   ]
 }`;
-    const response = await aiClient.models.generateContent({
-      model: MODEL_FAST,
+    const response = await generateContentWithFallback(aiClient, {
       contents: prompt,
       config: {
         systemInstruction: "You are an expert instructional designer. Propose 3 tailored training structures grounded in the provided SOP. Respond strictly with valid JSON.",
@@ -2147,8 +2258,7 @@ Return JSON conforming strictly to:
     if (!aiClient) {
       return res.json({ success: false, fallback: true, reason: "No API key on server" });
     }
-    const response = await aiClient.models.generateContent({
-      model: MODEL_PRO,
+    const response = await generateContentWithFallback(aiClient, {
       contents: textPrompt,
       config: {
         systemInstruction,
@@ -2177,8 +2287,7 @@ Return the next question, its reason, supporting references, answer options wher
     if (!aiClient) {
       return res.json({ success: false, fallback: true });
     }
-    const response = await aiClient.models.generateContent({
-      model: MODEL_PRO,
+    const response = await generateContentWithFallback(aiClient, {
       contents: `Session State:
 ${JSON.stringify(session).slice(0, 16e3)}
 Latest Answer:
@@ -2207,8 +2316,7 @@ Do not add unsupported procedural details. Do not omit critical controls for the
     if (!aiClient) {
       return res.json({ success: false, fallback: true });
     }
-    const response = await aiClient.models.generateContent({
-      model: MODEL_PRO,
+    const response = await generateContentWithFallback(aiClient, {
       contents: `SOP: ${filename}
 Report:
 ${JSON.stringify(extractionReport).slice(0, 8e3)}

@@ -100,7 +100,7 @@ export default function ManagerDashboardView({
               }}
               className="text-xs text-white/60 hover:text-white flex items-center gap-1 mb-2 font-medium cursor-pointer transition-colors"
             >
-              ← Back to Frontline (Guruji)
+              ← Back
             </button>
           )}
           <div className="flex items-center gap-2">

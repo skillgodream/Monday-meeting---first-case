@@ -1,0 +1,135 @@
+{
+  "entities": {
+    "AuditLog": {
+      "title": "Audit Log",
+      "description": "Tamper-proof audit logs recording SOP uploads, quiz completions, assignments, and administrative changes.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "action": { "type": "string" },
+        "details": { "type": "string" },
+        "timestamp": { "type": "string" },
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "organizationId": { "type": "string" }
+      },
+      "required": ["id", "action", "timestamp", "userId"]
+    },
+    "SopDocument": {
+      "title": "SOP Document",
+      "description": "Standard Operating Procedure documents and generated lessons stored in the repository.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "category": { "type": "string" },
+        "version": { "type": "string" },
+        "content": { "type": "string" },
+        "uploadedAt": { "type": "string" },
+        "uploadedBy": { "type": "string" }
+      },
+      "required": ["id", "title"]
+    },
+    "Quiz": {
+      "title": "Quiz",
+      "description": "Quiz assessments generated for SOPs.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "sopId": { "type": "string" },
+        "title": { "type": "string" },
+        "questions": { "type": "array" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "sopId", "title", "questions"]
+    },
+    "UserProgress": {
+      "title": "User Progress",
+      "description": "Tracks milestone completions and phase progress for learning journeys.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "completedMilestones": { "type": "array" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "userId"]
+    },
+    "Assignment": {
+      "title": "Training Assignment",
+      "description": "Training campaigns assigned to cohorts or learners.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "sopId": { "type": "string" },
+        "sopTitle": { "type": "string" },
+        "targetCohort": { "type": "string" },
+        "assignedBy": { "type": "string" },
+        "assignedAt": { "type": "string" }
+      },
+      "required": ["id", "sopId", "targetCohort"]
+    },
+    "Learner": {
+      "title": "Learner Profile",
+      "description": "Pilot learner profile and supervisor observation checklist.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "role": { "type": "string" },
+        "assignedSopId": { "type": "string" },
+        "assignedSopTitle": { "type": "string" },
+        "gurujiReadiness": { "type": "string" },
+        "workplaceReadiness": { "type": "string" }
+      },
+      "required": ["id", "name", "assignedSopId"]
+    },
+    "Attempt": {
+      "title": "Assessment Attempt",
+      "description": "Assessment attempt records including scores, user responses, and completion timestamps.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "quizId": { "type": "string" },
+        "sopId": { "type": "string" },
+        "score": { "type": "number" },
+        "passed": { "type": "boolean" },
+        "completedAt": { "type": "string" }
+      },
+      "required": ["id", "userId", "quizId", "score"]
+    }
+  },
+  "firestore": {
+    "/audit_logs/{logId}": {
+      "schema": { "$ref": "#/entities/AuditLog" },
+      "description": "Collection of audit trail entries."
+    },
+    "/sops/{sopId}": {
+      "schema": { "$ref": "#/entities/SopDocument" },
+      "description": "Collection of standard operating procedures."
+    },
+    "/quizzes/{quizId}": {
+      "schema": { "$ref": "#/entities/Quiz" },
+      "description": "Collection of quizzes."
+    },
+    "/progress/{progressId}": {
+      "schema": { "$ref": "#/entities/UserProgress" },
+      "description": "Collection of user progress records."
+    },
+    "/assignments/{assignmentId}": {
+      "schema": { "$ref": "#/entities/Assignment" },
+      "description": "Collection of training assignments."
+    },
+    "/learners/{learnerId}": {
+      "schema": { "$ref": "#/entities/Learner" },
+      "description": "Collection of learner profiles and readiness records."
+    },
+    "/attempts/{attemptId}": {
+      "schema": { "$ref": "#/entities/Attempt" },
+      "description": "Collection of assessment attempts and scores."
+    }
+  }
+}

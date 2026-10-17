@@ -44,6 +44,14 @@ import { AnalyzingModal } from './components/AnalyzingModal';
 import RoleNavigationModal, { UserRole } from './components/RoleNavigationModal';
 import ManagerDashboardView from './components/ManagerDashboardView';
 import AdminDashboardView from './components/AdminDashboardView';
+import {
+  saveSopToFirestore,
+  getAllSopsFromFirestore,
+  deleteSopFromFirestore,
+  logAuditEvent,
+  saveAttemptToFirestore,
+  saveProgressToFirestore
+} from './services/firestorePersistence';
 
 export default function App() {
   const [isDesignCheck, setIsDesignCheck] = useState<boolean>(
@@ -127,8 +135,17 @@ export default function App() {
 
   const isPipelineProcessingRef = useRef<boolean>(false);
 
-  // Helper to persist extracted SOP to server disk repository and local cache
+  // Helper to persist extracted SOP to Firestore database, server disk repository, and local cache
   const saveToPersistentRepository = useCallback(async (lesson: Lesson) => {
+    // 1. Authoritative Firestore Database Persistence
+    try {
+      await saveSopToFirestore(lesson);
+      console.log(`[Firestore Sync] Persisted module '${lesson.title}' to Firestore database.`);
+    } catch (fsErr) {
+      console.warn('[Firestore Sync Error]:', fsErr);
+    }
+
+    // 2. Server Repository Backup
     try {
       await fetch('/api/repository/sops', {
         method: 'POST',
@@ -139,6 +156,8 @@ export default function App() {
     } catch (err) {
       console.warn('[Repository Sync] Failed to persist to server, falling back to local cache:', err);
     }
+
+    // 3. Local Cache Fallback
     try {
       const cached = JSON.parse(localStorage.getItem('guruji_sop_repository') || '[]');
       const updated = [lesson, ...cached.filter((l: any) => l.id !== lesson.id)];
@@ -148,9 +167,26 @@ export default function App() {
     }
   }, []);
 
-  // Fetch all persisted SOPs from server repository on initial mount
+  // Fetch all persisted SOPs from Firestore database & server repository on initial mount
   useEffect(() => {
     const fetchRepositorySops = async () => {
+      // 1. Fetch from Firestore Database (Authoritative Store)
+      try {
+        const firestoreSops = await getAllSopsFromFirestore();
+        if (firestoreSops && firestoreSops.length > 0) {
+          setLessons((prev) => {
+            const incomingIds = new Set(firestoreSops.map((s) => s.id));
+            const existingNonDuplicates = prev.filter((l) => !incomingIds.has(l.id));
+            return [...firestoreSops, ...existingNonDuplicates];
+          });
+          console.log(`[Firestore Sync] Hydrated ${firestoreSops.length} persistent modules from Firestore.`);
+          return;
+        }
+      } catch (fsErr) {
+        console.warn('[Firestore Sync] Could not fetch from Firestore, trying server repo:', fsErr);
+      }
+
+      // 2. Fallback to Server Disk Repository
       try {
         const res = await fetch('/api/repository/sops');
         const data = await res.json();
@@ -166,7 +202,7 @@ export default function App() {
         console.warn('[Repository Sync] Could not fetch server repository:', err);
       }
 
-      // Offline / client-side cache fallback
+      // 3. Offline / Client-Side Cache Fallback
       try {
         const cached = JSON.parse(localStorage.getItem('guruji_sop_repository') || '[]');
         if (Array.isArray(cached) && cached.length > 0) {
@@ -424,7 +460,7 @@ export default function App() {
     setIsIntroDeckOpen(false);
   };
 
-  const handleSimulationFinish = (score: number) => {
+  const handleSimulationFinish = async (score: number) => {
     if (!activeSimulator) return;
     setLessons((prev) =>
       prev.map((l) =>
@@ -437,7 +473,33 @@ export default function App() {
           : l
       )
     );
+
+    // Save assessment attempt & progress in Firestore
+    const attemptId = `attempt_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+    const passed = score >= 80;
+    await saveAttemptToFirestore({
+      id: attemptId,
+      userId: 'user_active',
+      userName: 'Active Learner',
+      quizId: `quiz_${activeSimulator.id}`,
+      sopId: activeSimulator.id,
+      sopTitle: activeSimulator.title,
+      score,
+      passed,
+      completedAt: new Date().toISOString()
+    });
+
+    await saveProgressToFirestore({
+      userId: 'user_active',
+      userName: 'Active Learner',
+      completedMilestones: [activeSimulator.id],
+      phase1Progress: score,
+      phase2Progress: score,
+      phase3Progress: score,
+      lastActiveAt: new Date().toISOString()
+    });
   };
+
 
   const handleResetData = () => {
     setLessons(INITIAL_LESSONS);
@@ -487,9 +549,7 @@ export default function App() {
               onOpenRoleSwitcher={() => setIsRoleModalOpen(true)}
               onBackToHome={() => {
                 sounds.playTap();
-                setCurrentUserRole('learn');
-                localStorage.setItem('guruji_user_role', 'learn');
-                setActiveTab('home');
+                setIsRoleModalOpen(true);
               }}
             />
           ) : currentUserRole === 'manager' ? (
@@ -499,9 +559,7 @@ export default function App() {
               onOpenRoleSwitcher={() => setIsRoleModalOpen(true)}
               onBackToHome={() => {
                 sounds.playTap();
-                setCurrentUserRole('learn');
-                localStorage.setItem('guruji_user_role', 'learn');
-                setActiveTab('home');
+                setIsRoleModalOpen(true);
               }}
             />
           ) : (
@@ -513,7 +571,7 @@ export default function App() {
                 onSelectSop={handleSelectSop}
                 onExploreLibrary={() => setActiveTab('library')}
                 onOpenPassport={() => setIsPassportModalOpen(true)}
-                onShowGurujiWelcome={() => setShowGurujiHome(true)}
+                onShowGurujiWelcome={() => setIsRoleModalOpen(true)}
                 onOpenLearningJourney={() => setIsLearningJourneyOpen(true)}
                 userRole={currentUserRole}
               />
@@ -740,11 +798,7 @@ export default function App() {
               onSelectTab={(tab) => {
                 sounds.playTap();
                 setActiveTab(tab);
-                if (tab === 'home') {
-                  setShowGurujiHome(true);
-                } else {
-                  setShowGurujiHome(false);
-                }
+                setShowGurujiHome(false);
               }}
               role={currentUserRole}
               onOpenRoleSwitcher={() => setIsRoleModalOpen(true)}
