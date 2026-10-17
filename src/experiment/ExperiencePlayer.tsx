@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { SlidePlan } from './types';
-import { Lesson } from '../types';
+import { Lesson, SlidePage } from '../types';
 import { WelcomePage } from './pages/WelcomePage';
 import { findBestVisualMatch } from '../utils/visualLibraryMatcher';
 import { ArrowLeft, ArrowRight, CheckCircle2, AlertTriangle, ShieldCheck, HelpCircle, Layers, Lightbulb, Play } from 'lucide-react';
@@ -22,6 +22,47 @@ export function ExperiencePlayer({
   // View states: 'welcome' (Front Blue Title Page) | 'modules' (The 6-Module Picture Flow)
   const [currentView, setCurrentView] = useState<'welcome' | 'modules'>('welcome');
   const [activeModule, setActiveModule] = useState<number>(1); // 1 to 6
+  const [viewOriginalPpt, setViewOriginalPpt] = useState<boolean>(false);
+  const [currentPptSlide, setCurrentPptSlide] = useState<number>(1);
+
+  // Compute actual slides derived directly from uploaded PowerPoint / PDF / document
+  const realSlides: SlidePage[] = useMemo(() => {
+    if (lesson?.originalSlides && lesson.originalSlides.length > 0) {
+      return lesson.originalSlides;
+    }
+    if (lesson?.sourceMeta?.originalSlides && lesson.sourceMeta.originalSlides.length > 0) {
+      return lesson.sourceMeta.originalSlides;
+    }
+    if (lesson?.operationalBlueprint?.operational_steps && lesson.operationalBlueprint.operational_steps.length > 0) {
+      return lesson.operationalBlueprint.operational_steps.map((step, idx) => ({
+        slideNumber: idx + 1,
+        title: step.instruction,
+        subtitle: `Operational Step ${idx + 1} · Category: ${step.category}`,
+        bullets: [
+          step.why_it_matters ? `Why it matters: ${step.why_it_matters}` : `Source Ref: ${step.source?.source_ref || 'SOP'}`,
+          step.scenario_question ? `Assessment Focus: ${step.scenario_question}` : `Follow exact procedure for step ${idx + 1}.`,
+        ].filter(Boolean),
+        rawContent: step.instruction,
+      }));
+    }
+    return [
+      {
+        slideNumber: 1,
+        title: lesson?.title || 'Standard Operating Procedure',
+        subtitle: lesson?.subtitle || 'Original presentation slide content preserved.',
+        bullets: [
+          `Document Reference: ${lesson?.sourceMeta?.filename || 'Uploaded_Presentation.pptx'}`,
+          `Target Role: ${lesson?.operationalBlueprint?.role || 'Operator'} · Scope: ${lesson?.operationalBlueprint?.scope || 'Operational Standard'}`,
+          `Total Words: ${lesson?.sourceMeta?.wordCount || 0} · Pages: ${lesson?.sourceMeta?.pageCount || 1}`,
+        ],
+        rawContent: lesson?.description || '',
+      },
+    ];
+  }, [lesson]);
+
+  const totalPptSlides = realSlides.length;
+  const currentSlideIndex = Math.min(Math.max(0, currentPptSlide - 1), totalPptSlides - 1);
+  const activeSlide = realSlides[currentSlideIndex] || realSlides[0];
 
   // Welcome Slide (Slide 0)
   const welcomeSlide = plan?.slides?.find((s) => s.type === 'WELCOME') || {
@@ -372,10 +413,176 @@ export function ExperiencePlayer({
           </div>
         </div>
 
+        {/* VIEW MODE TOGGLE BAR: Interactive Learning Modules vs Original PPT Slide Presentation */}
+        <div className="px-4 pt-2 shrink-0">
+          <div className="grid grid-cols-2 p-1 bg-white/5 border border-white/10 rounded-full">
+            <button
+              onClick={() => {
+                sounds.playTap();
+                setViewOriginalPpt(false);
+              }}
+              className={`py-1.5 px-3 rounded-full text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                !viewOriginalPpt
+                  ? 'bg-indigo-600 text-white shadow-md'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <span>Interactive Deck</span>
+            </button>
+            <button
+              onClick={() => {
+                sounds.playTap();
+                setViewOriginalPpt(true);
+              }}
+              className={`py-1.5 px-3 rounded-full text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                viewOriginalPpt
+                  ? 'bg-indigo-600 text-white shadow-md'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <span>🖼️ Original PPT Slides</span>
+            </button>
+          </div>
+        </div>
+
         {/* SCROLLABLE MAIN CONTENT AREA */}
         <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
           
-          {/* HERO BANNER CARD (Dark Rounded Container with Background Image & Gradient Overlay) */}
+          {/* OPTION A: ORIGINAL UPLOADED PPT SLIDE PRESENTATION VIEW (1:1 Preserved Layout) */}
+          {viewOriginalPpt ? (
+            <div className="space-y-4 animate-in fade-in duration-300">
+              
+              {/* Top Banner Notice */}
+              <div className="p-4 rounded-2xl bg-indigo-950/40 border border-indigo-500/30 flex items-center justify-between text-xs">
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-indigo-400 animate-pulse" />
+                  <span className="font-bold text-indigo-200">Original Presentation Slide Design Preserved</span>
+                </div>
+                <span className="font-mono text-indigo-300 font-bold">
+                  Slide {activeSlide.slideNumber} of {totalPptSlides}
+                </span>
+              </div>
+
+              {/* 16:9 Presentation Slide Card (Original PPT Design Replica) */}
+              <div className="bg-[#0D1222] border-2 border-white/15 rounded-3xl p-5 shadow-2xl space-y-4 text-white relative overflow-hidden">
+                {/* Decorative PPT Header Bar */}
+                <div className="flex items-center justify-between pb-3 border-b border-white/10">
+                  <span className="text-[10px] font-mono font-extrabold uppercase tracking-widest text-indigo-400">
+                    {lesson?.sourceMeta?.filename || 'Uploaded_Presentation.pptx'}
+                  </span>
+                  <span className="text-[10px] font-bold text-slate-400">
+                    Slide {String(activeSlide.slideNumber).padStart(2, '0')}
+                  </span>
+                </div>
+
+                {/* Original Slide Title */}
+                <div className="space-y-1">
+                  <h2 className="text-lg sm:text-xl font-black text-white tracking-tight">
+                    {activeSlide.title}
+                  </h2>
+                  <p className="text-xs text-slate-300">
+                    {activeSlide.subtitle || `Content extracted directly from slide ${activeSlide.slideNumber}.`}
+                  </p>
+                </div>
+
+                {/* Original Visual Diagram Frame or Canvas Screenshot */}
+                <div className="relative rounded-2xl overflow-hidden min-h-[190px] max-h-[320px] w-full border border-white/10 bg-black/60 flex items-center justify-center">
+                  {activeSlide.imageDataUrl ? (
+                    <img
+                      src={activeSlide.imageDataUrl}
+                      alt={`Slide ${activeSlide.slideNumber} Rendered Image`}
+                      className="w-full h-full max-h-[300px] object-contain rounded-2xl"
+                    />
+                  ) : (
+                    <>
+                      <img
+                        src={heroImage}
+                        alt={`Slide ${activeSlide.slideNumber} Visual`}
+                        className="w-full h-48 object-cover opacity-80"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                      <div className="absolute bottom-3 left-3 px-3 py-1 rounded-full bg-black/80 backdrop-blur-md border border-white/20 text-white text-[10px] font-mono font-bold">
+                        Slide {activeSlide.slideNumber} Visual Layout & Diagram
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                {/* Original Slide Bullet Points */}
+                <div className="space-y-2 pt-1">
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-indigo-400 block">
+                    SLIDE BULLET POINTS & SPECIFICATIONS
+                  </span>
+                  <div className="space-y-2 text-xs font-semibold text-slate-200">
+                    {activeSlide.bullets && activeSlide.bullets.length > 0 ? (
+                      activeSlide.bullets.map((bullet, idx) => (
+                        <div key={idx} className="p-3 rounded-xl bg-white/5 border border-white/10 flex items-start gap-2.5">
+                          <span className="text-indigo-400 font-bold shrink-0">•</span>
+                          <span className="leading-relaxed">{bullet}</span>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="p-3 rounded-xl bg-white/5 border border-white/10 flex items-start gap-2.5">
+                        <span className="text-indigo-400 font-bold shrink-0">•</span>
+                        <span>{activeSlide.rawContent || 'Slide content loaded from original deck.'}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Slide Carousel Controls */}
+                <div className="flex items-center justify-between pt-3 border-t border-white/10">
+                  <button
+                    disabled={currentPptSlide <= 1}
+                    onClick={() => {
+                      sounds.playTap();
+                      setCurrentPptSlide((prev) => Math.max(1, prev - 1));
+                    }}
+                    className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 disabled:opacity-30 text-white text-xs font-bold transition-all cursor-pointer"
+                  >
+                    ← Previous
+                  </button>
+
+                  <div className="flex items-center gap-1 overflow-x-auto max-w-[180px] sm:max-w-none scrollbar-none py-1">
+                    {realSlides.map((s, idx) => {
+                      const num = idx + 1;
+                      return (
+                        <button
+                          key={num}
+                          onClick={() => {
+                            sounds.playTap();
+                            setCurrentPptSlide(num);
+                          }}
+                          className={`w-7 h-7 rounded-lg text-xs font-bold shrink-0 transition-all cursor-pointer ${
+                            currentPptSlide === num
+                              ? 'bg-indigo-600 text-white shadow-md'
+                              : 'bg-white/5 text-slate-400 hover:text-white'
+                          }`}
+                        >
+                          {num}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <button
+                    disabled={currentPptSlide >= totalPptSlides}
+                    onClick={() => {
+                      sounds.playTap();
+                      setCurrentPptSlide((prev) => Math.min(totalPptSlides, prev + 1));
+                    }}
+                    className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-30 text-white text-xs font-bold transition-all cursor-pointer"
+                  >
+                    Next →
+                  </button>
+                </div>
+
+              </div>
+
+            </div>
+          ) : (
+            /* OPTION B: INTERACTIVE LEARNING MODULES DECK */
+            <>
           <div className="relative rounded-3xl overflow-hidden p-6 border border-white/15 shadow-2xl min-h-[190px] flex flex-col justify-end">
             {/* Background Image with Ambient Overlay */}
             <div 
@@ -742,6 +949,8 @@ export function ExperiencePlayer({
                 </div>
               </div>
             </div>
+          )}
+          </>
           )}
 
         </div>

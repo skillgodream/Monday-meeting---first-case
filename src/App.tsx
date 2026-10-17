@@ -73,6 +73,7 @@ export default function App() {
   const [lessons, setLessons] = useState<Lesson[]>(INITIAL_LESSONS);
   const [showBentoShowcase, setShowBentoShowcase] = useState<boolean>(false);
   const [isSopOptionsOpen, setIsSopOptionsOpen] = useState<boolean>(false);
+  const [showGurujiHome, setShowGurujiHome] = useState<boolean>(true);
 
   // Role & Permissions State: Learner · Manager · Admin (ID locking ready)
   const [currentUserRole, setCurrentUserRole] = useState<UserRole>(() => {
@@ -457,57 +458,60 @@ export default function App() {
         <div className="absolute bottom-20 -left-20 w-[450px] h-[450px] rounded-full bg-slate-500/[0.03] blur-[130px]" />
       </div>
 
-
-
       {/* Main Tab Views & Bottom Navigation (only rendered when NOT in an active lesson, deck, or simulation) */}
       {!selectedLesson && !activeSimulator && !isIntroDeckOpen && (
-        <>
-          {activeTab === 'home' && (
-            <main className="flex-1 flex flex-col w-full animate-in fade-in duration-200">
-              {currentUserRole === 'admin' ? (
-                <div className="max-w-4xl mx-auto w-full">
-                  <AdminDashboardView
-                    lessons={lessons}
-                    onScanClick={() => setIsScanOpen(true)}
-                    onUploadClick={() => setIsUploadOpen(true)}
-                    onSelectSop={handleSelectSop}
-                    onDeleteSop={(id) => {
-                      fetch(`/api/repository/sops/${id}`, { method: 'DELETE' });
-                      setLessons((prev) => prev.filter((l) => l.id !== id));
-                    }}
-                    onOpenRoleSwitcher={() => setIsRoleModalOpen(true)}
-                    onBackToHome={() => {
-                      sounds.playTap();
-                      setCurrentUserRole('learn');
-                      localStorage.setItem('guruji_user_role', 'learn');
-                      setActiveTab('home');
-                    }}
-                  />
-                </div>
-              ) : currentUserRole === 'manager' ? (
-                <div className="max-w-4xl mx-auto w-full">
-                  <ManagerDashboardView
-                    lessons={lessons}
-                    onSelectSop={handleSelectSop}
-                    onOpenRoleSwitcher={() => setIsRoleModalOpen(true)}
-                    onBackToHome={() => {
-                      sounds.playTap();
-                      setCurrentUserRole('learn');
-                      localStorage.setItem('guruji_user_role', 'learn');
-                      setActiveTab('home');
-                    }}
-                  />
-                </div>
-              ) : (
-                <div className="max-w-lg mx-auto w-full">
-                  <MeetGurujiScreen
-                    onContinue={() => {
-                      sounds.playTap();
-                      setIsRoleModalOpen(true);
-                    }}
-                  />
-                </div>
-              )}
+    <>
+      {activeTab === 'home' && (
+        <main className="flex-1 flex flex-col w-full animate-in fade-in duration-200">
+          {showGurujiHome ? (
+            <div className="max-w-lg mx-auto w-full">
+              <MeetGurujiScreen
+                onContinue={() => {
+                  sounds.playTap();
+                  setIsRoleModalOpen(true);
+                }}
+              />
+            </div>
+          ) : currentUserRole === 'admin' ? (
+            <AdminDashboardView
+              lessons={lessons}
+              onScanClick={() => setIsScanOpen(true)}
+              onUploadClick={() => setIsUploadOpen(true)}
+              onSelectSop={handleSelectSop}
+              onDeleteSop={(id) => {
+                fetch(`/api/repository/sops/${id}`, { method: 'DELETE' });
+                setLessons((prev) => prev.filter((l) => l.id !== id));
+              }}
+              onOpenRoleSwitcher={() => setIsRoleModalOpen(true)}
+              onBackToHome={() => {
+                sounds.playTap();
+                setCurrentUserRole('learn');
+                localStorage.setItem('guruji_user_role', 'learn');
+                setActiveTab('home');
+              }}
+            />
+          ) : currentUserRole === 'manager' ? (
+            <ManagerDashboardView
+              lessons={lessons}
+              onSelectSop={handleSelectSop}
+              onOpenRoleSwitcher={() => setIsRoleModalOpen(true)}
+              onBackToHome={() => {
+                sounds.playTap();
+                setCurrentUserRole('learn');
+                localStorage.setItem('guruji_user_role', 'learn');
+                setActiveTab('home');
+              }}
+            />
+          ) : (
+            <div className="max-w-lg mx-auto w-full">
+              <LibraryView
+                lessons={lessons}
+                onSelectLesson={(lesson) => {
+                  handleSelectSop(lesson.id, lesson.title);
+                }}
+              />
+            </div>
+          )}
 
               {/* Modern Ultra-Sleek Glass SOP Selection Drawer (Role-Permission Aware) */}
               {isSopOptionsOpen && (
@@ -721,11 +725,19 @@ export default function App() {
             </main>
           )}
 
-          {/* Floating Bottom Navigation Bar (Only for frontline User/Learner, hidden in Admin and Manager workspaces) */}
-          {currentUserRole === 'learn' && activeTab !== 'home' && (
+          {/* Floating Bottom Navigation Bar (Only on user/learner pages) */}
+          {currentUserRole === 'learn' && !showGurujiHome && (
             <BottomNav
               activeTab={activeTab}
-              onSelectTab={(tab) => setActiveTab(tab)}
+              onSelectTab={(tab) => {
+                sounds.playTap();
+                setActiveTab(tab);
+                if (tab === 'home') {
+                  setShowGurujiHome(true);
+                } else {
+                  setShowGurujiHome(false);
+                }
+              }}
               role={currentUserRole}
               onOpenRoleSwitcher={() => setIsRoleModalOpen(true)}
             />
@@ -944,10 +956,11 @@ export default function App() {
         onSelectRole={(role) => {
           setCurrentUserRole(role);
           localStorage.setItem('guruji_user_role', role);
+          setShowGurujiHome(false);
           if (role === 'learn') {
             setActiveTab('library');
           } else {
-            setActiveTab('pilot');
+            setActiveTab('home');
           }
         }}
         onClose={() => setIsRoleModalOpen(false)}

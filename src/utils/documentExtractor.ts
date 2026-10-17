@@ -6,9 +6,11 @@
  */
 
 import { analyzeDocumentCharacters } from './characterDiagnostic';
-import { extractTextFromPdf } from '../services/pdfService';
+import { extractTextFromPdf, extractSlidesFromPdf } from '../services/pdfService';
 import { extractTextFromImage } from '../services/ocrService';
+import { extractSlidesFromPptx } from './pptxService';
 import { getApiHeaders } from './apiHelper';
+import { SlidePage } from '../types';
 
 export interface ExtractionDiagnostics {
   totalChars: number;
@@ -30,6 +32,7 @@ export interface ExtractedDocument {
   extractedAt: string;
   diagnostics: ExtractionDiagnostics;
   fileBase64?: string;
+  originalSlides?: SlidePage[];
 }
 
 /**
@@ -151,6 +154,7 @@ export async function extractDocumentContent(file: File | { name: string; conten
   let filename = file.name || 'uploaded_document.txt';
   let mimeType = 'text/plain';
   let fileBase64: string | undefined;
+  let extractedSlides: SlidePage[] = [];
 
   if ('content' in file && typeof file.content === 'string') {
     rawText = file.content;
@@ -165,16 +169,35 @@ export async function extractDocumentContent(file: File | { name: string; conten
     }
 
     const lowerName = filename.toLowerCase();
+    const isPptx = lowerName.endsWith('.pptx') || lowerName.endsWith('.ppt') || mimeType.includes('presentation') || mimeType.includes('powerpoint');
     const isPdf = lowerName.endsWith('.pdf') || mimeType.includes('pdf');
     const isImage = mimeType.includes('image') || lowerName.endsWith('.png') || lowerName.endsWith('.jpg') || lowerName.endsWith('.jpeg') || lowerName.endsWith('.webp');
 
-    // 1. FAST CLIENT-SIDE PDF EXTRACTION (pdfjs-dist in browser — instant & resilient)
-    if (isPdf) {
+    // 0. PPTX / POWERPOINT EXTRACTION (JSZip & XML parsing)
+    if (isPptx) {
       try {
-        console.log(`[DocumentExtractor] Running browser-side PDF text extraction for '${filename}'...`);
-        const pdfResult = await extractTextFromPdf(file);
-        if (pdfResult.text && pdfResult.text.trim().length > 25) {
+        console.log(`[DocumentExtractor] Running PPTX slide parsing for '${filename}'...`);
+        const pptxRes = await extractSlidesFromPptx(file);
+        if (pptxRes.slides && pptxRes.slides.length > 0) {
+          extractedSlides = pptxRes.slides;
+          rawText = pptxRes.fullText;
+          console.log(`[DocumentExtractor PPTX SUCCESS] Parsed ${extractedSlides.length} PowerPoint slides`);
+        }
+      } catch (pptxErr) {
+        console.warn('[DocumentExtractor PPTX] Error parsing presentation:', pptxErr);
+      }
+    }
+
+    // 1. FAST CLIENT-SIDE PDF EXTRACTION (pdfjs-dist in browser — instant & resilient)
+    if (!rawText && isPdf) {
+      try {
+        console.log(`[DocumentExtractor] Running browser-side PDF text and slide extraction for '${filename}'...`);
+        const pdfResult = await extractSlidesFromPdf(file);
+        if (pdfResult.text && pdfResult.text.trim().length > 10) {
           rawText = pdfResult.text;
+          if (pdfResult.slides && pdfResult.slides.length > 0) {
+            extractedSlides = pdfResult.slides;
+          }
           console.log(`[DocumentExtractor Browser PDF SUCCESS] Extracted ${rawText.split(/\s+/).length} words across ${pdfResult.pageCount} pages`);
         }
       } catch (pdfErr) {
@@ -340,17 +363,37 @@ export async function extractDocumentContent(file: File | { name: string; conten
   const fileHash = computeDeterministicHash(`${normalizedText}||${filename}||${pipelineVersion}`);
   const confirmationText = `We read ${diagnostics.pageCount} page${diagnostics.pageCount > 1 ? 's' : ''} · ${diagnostics.wordCount.toLocaleString()} words`;
 
+  // Fallback: If no structured slides were extracted, build slides from paragraphs/sections
+  if (extractedSlides.length === 0 && normalizedText.trim().length > 0) {
+    const sections = normalizedText.split(/\n\s*\n/).map((s) => s.trim()).filter((s) => s.length > 0);
+    if (sections.length > 0) {
+      extractedSlides = sections.slice(0, 15).map((sec, idx) => {
+        const lines = sec.split('\n').map((l) => l.trim()).filter((l) => l.length > 0);
+        const title = lines[0] || `Slide ${idx + 1}`;
+        const bullets = lines.slice(1);
+        return {
+          slideNumber: idx + 1,
+          title: title.length > 70 ? title.slice(0, 70) + '...' : title,
+          subtitle: `Slide ${idx + 1} content from ${filename}`,
+          bullets: bullets.length > 0 ? bullets : [sec],
+          rawContent: sec,
+        };
+      });
+    }
+  }
+
   const result: ExtractedDocument = {
     filename,
     rawText: normalizedText,
     wordCount: diagnostics.wordCount,
-    pageCount: diagnostics.pageCount,
+    pageCount: extractedSlides.length > 0 ? extractedSlides.length : diagnostics.pageCount,
     fileHash,
     confirmationText,
     mimeType,
     extractedAt: new Date().toISOString(),
     diagnostics,
     fileBase64,
+    originalSlides: extractedSlides,
   };
 
   // Diagnostic Audit Logging

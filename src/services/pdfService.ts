@@ -1,4 +1,5 @@
 import * as pdfjsLib from 'pdfjs-dist';
+import { SlidePage } from '../types';
 
 // Configure worker safely for browser environments
 try {
@@ -10,13 +11,23 @@ try {
 }
 
 /**
- * Extracts digital text from a PDF file directly in the browser with page awareness.
- * Uses a timeout race so that it never hangs.
+ * Extracts digital text and page metadata from a PDF file directly in the browser.
  */
 export async function extractTextFromPdf(
   fileOrBuffer: File | ArrayBuffer,
   timeoutMs: number = 15000
 ): Promise<{ text: string; pageCount: number }> {
+  const result = await extractSlidesFromPdf(fileOrBuffer, timeoutMs);
+  return { text: result.text, pageCount: result.pageCount };
+}
+
+/**
+ * Extracts structured slide pages AND renders 1:1 canvas images for each PDF page.
+ */
+export async function extractSlidesFromPdf(
+  fileOrBuffer: File | ArrayBuffer,
+  timeoutMs: number = 20000
+): Promise<{ text: string; pageCount: number; slides: SlidePage[] }> {
   const extractPromise = (async () => {
     try {
       const buffer = fileOrBuffer instanceof File ? await fileOrBuffer.arrayBuffer() : fileOrBuffer;
@@ -29,6 +40,7 @@ export async function extractTextFromPdf(
       const pdf = await loadingTask.promise;
       const pageCount = pdf.numPages;
       let fullText = '';
+      const slides: SlidePage[] = [];
 
       for (let i = 1; i <= pageCount; i++) {
         const page = await pdf.getPage(i);
@@ -57,38 +69,50 @@ export async function extractTextFromPdf(
         if (pageText.trim()) {
           fullText += `${pageText}\n\n`;
         }
+
+        // Render page onto an HTML5 Canvas to capture high-res page screenshot
+        let imageDataUrl: string | undefined;
+        try {
+          if (typeof document !== 'undefined') {
+            const viewport = page.getViewport({ scale: 1.5 });
+            const canvas = document.createElement('canvas');
+            canvas.width = viewport.width;
+            canvas.height = viewport.height;
+            const ctx = canvas.getContext('2d');
+            if (ctx) {
+              await page.render({ canvasContext: ctx, canvas, viewport } as any).promise;
+              imageDataUrl = canvas.toDataURL('image/png');
+            }
+          }
+        } catch (renderErr) {
+          console.warn(`[PDF Service] Canvas render failed for page ${i}:`, renderErr);
+        }
+
+        const title = pageLines[0] || `Slide ${i}`;
+        const bullets = pageLines.slice(1).filter((l) => l.trim().length > 0);
+
+        slides.push({
+          slideNumber: i,
+          title,
+          subtitle: bullets[0] || `PDF Document Page ${i}`,
+          bullets: bullets.length > 0 ? bullets : [pageText || `Page ${i} content`],
+          rawContent: pageText,
+          imageDataUrl,
+        });
       }
 
-      return { text: fullText.trim(), pageCount };
+      return { text: fullText.trim(), pageCount, slides };
     } catch (err) {
-      console.warn('[PDF Service] PDF text extraction failed, attempting direct buffer decode:', err);
-      try {
-        const buffer = fileOrBuffer instanceof File ? await fileOrBuffer.arrayBuffer() : fileOrBuffer;
-        const decoder = new TextDecoder('latin1');
-        const pdfContent = decoder.decode(buffer);
-        const textChunks: string[] = [];
-        const tjMatches = pdfContent.match(/\(([^)]{2,})\)\s*(?:Tj|'|")/g);
-        if (tjMatches) {
-          tjMatches.forEach((m) => {
-            const inner = m.replace(/\s*(?:Tj|'|")$/, '').replace(/^\(/, '').replace(/\)$/, '').trim();
-            if (inner.length > 0 && !/^[\x00-\x1F]+$/.test(inner)) textChunks.push(inner);
-          });
-        }
-        if (textChunks.length >= 3) {
-          return { text: textChunks.join(' ').replace(/\s+/g, ' ').trim(), pageCount: 1 };
-        }
-      } catch (fallbackErr) {
-        console.warn('[PDF Service] Direct buffer decode fallback failed:', fallbackErr);
-      }
-      return { text: '', pageCount: 0 };
+      console.warn('[PDF Service] PDF slide extraction failed:', err);
+      return { text: '', pageCount: 0, slides: [] };
     }
   })();
 
   let timerId: any;
-  const timeoutPromise = new Promise<{ text: string; pageCount: number }>((resolve) => {
+  const timeoutPromise = new Promise<{ text: string; pageCount: number; slides: SlidePage[] }>((resolve) => {
     timerId = setTimeout(() => {
       console.warn(`[PDF Service] PDF extraction timed out after ${timeoutMs}ms`);
-      resolve({ text: '', pageCount: 0 });
+      resolve({ text: '', pageCount: 0, slides: [] });
     }, timeoutMs);
   });
 

@@ -1,5 +1,8 @@
-import React from 'react';
-import { Upload, Camera, Sparkles, ArrowRight, ShieldCheck, FileText, Play, BookOpen } from 'lucide-react';
+import React, { useState } from 'react';
+import { 
+  Upload, Camera, Sparkles, ArrowRight, ShieldCheck, FileText, Play, BookOpen,
+  HelpCircle, Layers, CheckCircle2, Award, Zap, BrainCircuit
+} from 'lucide-react';
 import { Lesson } from '../types';
 import { sounds } from '../utils/audio';
 import { UserRole } from '../components/RoleNavigationModal';
@@ -11,6 +14,7 @@ interface HomeScreenProps {
   onSelectSop: (lessonId: string, title?: string) => void;
   onExploreLibrary: () => void;
   onOpenPassport: () => void;
+  onShowGurujiWelcome?: () => void;
   userRole?: UserRole;
 }
 
@@ -21,20 +25,79 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   onSelectSop,
   onExploreLibrary,
   onOpenPassport,
+  onShowGurujiWelcome,
   userRole = 'learn',
 }) => {
+  const [activeTab, setActiveTab] = useState<'module' | 'quiz' | 'other'>('module');
+
+  // Standalone Quizzes Data
+  const standaloneQuizzes = [
+    {
+      id: 'quiz_housekeeping',
+      lessonId: lessons[0]?.id || 'housekeeping_sanitization',
+      title: 'Room Sanitization & Dwell Time Drill',
+      category: 'Safety',
+      questionsCount: 4,
+      duration: '5 min',
+      passingScore: '80%',
+      description: 'Test your understanding of chemical dilution ratios, contact dwell times, and high-touch surface protocols.',
+      color: 'from-sky-500/20 to-blue-600/20',
+      borderColor: 'border-sky-500/30'
+    },
+    {
+      id: 'quiz_picking',
+      lessonId: lessons[1]?.id || 'ecommerce_order_picking',
+      title: 'E-Commerce Order Picking & Scanner Quiz',
+      category: 'Picking',
+      questionsCount: 5,
+      duration: '6 min',
+      passingScore: '85%',
+      description: 'Evaluate handheld scanner verification, pick route optimization, and damaged item escalation.',
+      color: 'from-indigo-500/20 to-purple-600/20',
+      borderColor: 'border-indigo-500/30'
+    },
+    {
+      id: 'quiz_safety',
+      lessonId: lessons[2]?.id || 'forklift_pallet_stacking',
+      title: 'Forklift & High-Bay Pallet Stacking Safety',
+      category: 'Safety',
+      questionsCount: 6,
+      duration: '8 min',
+      passingScore: '90%',
+      description: 'Mandatory safety check on load center balancing, tilt control, and rack alignment procedures.',
+      color: 'from-amber-500/20 to-orange-600/20',
+      borderColor: 'border-amber-500/30'
+    },
+    {
+      id: 'quiz_inventory',
+      lessonId: lessons[3]?.id || 'inventory_cycle_count',
+      title: 'Inventory Cycle Count & Bin Audit Drill',
+      category: 'Inventory',
+      questionsCount: 4,
+      duration: '5 min',
+      passingScore: '80%',
+      description: 'Scenario assessment on blind count accuracy, variance threshold reporting, and bin tag verification.',
+      color: 'from-emerald-500/20 to-teal-600/20',
+      borderColor: 'border-emerald-500/30'
+    }
+  ];
+
   return (
     <div className="flex-1 flex flex-col px-4 pt-4 pb-28 space-y-5 max-w-lg mx-auto w-full animate-in fade-in duration-200">
       
-      {/* 1. Hero Field Trainer Card with Guruji Avatar & Quick Actions (matching user's screenshot) */}
+      {/* 1. Hero Field Trainer Card with Guruji Avatar & Quick Actions */}
       <div className="relative overflow-hidden rounded-[32px] bg-[#12151E]/90 border border-white/10 p-6 text-white shadow-2xl backdrop-blur-2xl flex flex-col items-center text-center space-y-4">
         
         {/* Ambient Specular Background Glow */}
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-32 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
 
         {/* Mascot Container */}
-        <div className="relative w-28 h-28 shrink-0 flex items-center justify-center pt-2">
-          <div className="absolute inset-0 rounded-full bg-emerald-500/10 blur-xl animate-pulse" />
+        <button 
+          onClick={onShowGurujiWelcome}
+          className="relative w-28 h-28 shrink-0 flex items-center justify-center pt-2 cursor-pointer group hover:scale-105 transition-transform"
+          title="Meet Guruji"
+        >
+          <div className="absolute inset-0 rounded-full bg-emerald-500/10 blur-xl animate-pulse group-hover:bg-emerald-500/20" />
           <img
             src="/Cheerful Coach with Checkmark Phone.png"
             alt="Guruji Coach"
@@ -43,13 +106,16 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
               (e.target as HTMLImageElement).src = "/Cheerful Coach with Checkmark Phone.png";
             }}
           />
-        </div>
+        </button>
 
         {/* Status Pill Badge */}
-        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-[11px] font-semibold text-emerald-300">
+        <button
+          onClick={onShowGurujiWelcome}
+          className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-[11px] font-semibold text-emerald-300 cursor-pointer transition-all active:scale-95"
+        >
           <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-          Meet Guruji - AI Trainer
-        </div>
+          <span>Meet Guruji - AI Trainer</span>
+        </button>
 
         {/* Title & Subtitle */}
         <div className="space-y-1.5 max-w-xs">
@@ -135,87 +201,239 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
         </div>
       </div>
 
-      {/* 2. Verified Domain SOPs / Training Decks */}
-      <div className="space-y-3 pt-2">
-        <div className="flex items-center justify-between px-1">
-          <h2 className="text-xs font-bold uppercase tracking-wider text-slate-400">
-            Verified Domain SOPs
-          </h2>
-          <button
-            onClick={() => {
-              sounds.playTap();
-              onExploreLibrary();
-            }}
-            className="text-xs font-semibold text-slate-300 hover:text-white flex items-center gap-1 cursor-pointer transition-colors"
-          >
-            <span>View All</span>
-            <ArrowRight size={12} />
-          </button>
-        </div>
+      {/* 2. Sleek Segmented 3-Tab Bar (Module · Quiz · Other) */}
+      <div className="flex bg-[#12151E]/90 border border-white/10 p-1.5 rounded-2xl backdrop-blur-xl gap-1 shadow-lg">
+        <button
+          onClick={() => {
+            sounds.playTap();
+            setActiveTab('module');
+          }}
+          className={`flex-1 py-2.5 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+            activeTab === 'module'
+              ? 'bg-white text-black shadow-md font-black scale-[1.02]'
+              : 'text-slate-400 hover:text-white hover:bg-white/5'
+          }`}
+        >
+          <BookOpen size={15} />
+          <span>Module</span>
+        </button>
 
-        <div className="space-y-2.5">
-          {lessons.slice(0, 4).map((lesson) => (
-            <div
-              key={lesson.id}
+        <button
+          onClick={() => {
+            sounds.playTap();
+            setActiveTab('quiz');
+          }}
+          className={`flex-1 py-2.5 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+            activeTab === 'quiz'
+              ? 'bg-white text-black shadow-md font-black scale-[1.02]'
+              : 'text-slate-400 hover:text-white hover:bg-white/5'
+          }`}
+        >
+          <HelpCircle size={15} />
+          <span>Quiz</span>
+        </button>
+
+        <button
+          onClick={() => {
+            sounds.playTap();
+            setActiveTab('other');
+          }}
+          className={`flex-1 py-2.5 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+            activeTab === 'other'
+              ? 'bg-white text-black shadow-md font-black scale-[1.02]'
+              : 'text-slate-400 hover:text-white hover:bg-white/5'
+          }`}
+        >
+          <Layers size={15} />
+          <span>Other</span>
+        </button>
+      </div>
+
+      {/* 3. TAB CONTENT SECTION */}
+      
+      {/* TAB 1: MODULE COMPETENCY BREAKDOWN */}
+      {activeTab === 'module' && (
+        <div className="space-y-4 animate-in fade-in duration-200">
+          <div className="flex items-center justify-between px-1">
+            <div>
+              <h2 className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
+                <BrainCircuit size={14} className="text-indigo-400" />
+                <span>Module Competency Breakdown</span>
+              </h2>
+              <p className="text-[11px] text-slate-400 mt-0.5">
+                Core operational SOP modules and skill breakdown
+              </p>
+            </div>
+            <button
               onClick={() => {
                 sounds.playTap();
-                onSelectSop(lesson.id, lesson.title);
+                onExploreLibrary();
               }}
-              className="group flex items-center justify-between p-4 bg-[#12151E]/80 hover:bg-[#1A1E2C]/90 backdrop-blur-xl rounded-2xl border border-white/10 hover:border-white/20 shadow-md active:scale-[0.99] transition-all cursor-pointer"
+              className="text-xs font-semibold text-slate-300 hover:text-white flex items-center gap-1 cursor-pointer transition-colors shrink-0"
             >
-              <div className="flex items-center gap-3.5 min-w-0">
-                <div className="w-10 h-10 rounded-xl bg-white/10 border border-white/10 text-white flex items-center justify-center shrink-0 font-black text-sm group-hover:scale-105 transition-transform">
-                  <FileText size={18} />
-                </div>
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-semibold uppercase px-2 py-0.5 rounded-full bg-white/10 text-slate-300 border border-white/10">
-                      {lesson.category}
-                    </span>
-                    <span className="text-[10px] font-normal text-slate-400">
-                      {lesson.stepsCount || 6} Steps
-                    </span>
+              <span>View All</span>
+              <ArrowRight size={12} />
+            </button>
+          </div>
+
+          <div className="space-y-2.5">
+            {lessons.slice(0, 4).map((lesson, idx) => (
+              <div
+                key={lesson.id}
+                onClick={() => {
+                  sounds.playTap();
+                  onSelectSop(lesson.id, lesson.title);
+                }}
+                className="group flex items-center justify-between p-4 bg-[#12151E]/80 hover:bg-[#1A1E2C]/90 backdrop-blur-xl rounded-2xl border border-white/10 hover:border-white/20 shadow-md active:scale-[0.99] transition-all cursor-pointer"
+              >
+                <div className="flex items-center gap-3.5 min-w-0">
+                  <div className="w-10 h-10 rounded-xl bg-white/10 border border-white/10 text-white flex items-center justify-center shrink-0 font-black text-sm group-hover:scale-105 transition-transform">
+                    <FileText size={18} />
                   </div>
-                  <h3 className="text-sm font-bold text-white truncate mt-0.5">
-                    {lesson.title}
-                  </h3>
-                  <p className="text-xs text-slate-400 truncate mt-0.5">
-                    {lesson.subtitle || lesson.description}
-                  </p>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                        Module {idx + 1}
+                      </span>
+                      <span className="text-[10px] font-semibold uppercase px-2 py-0.5 rounded-full bg-white/10 text-slate-300 border border-white/10">
+                        {lesson.category}
+                      </span>
+                      <span className="text-[10px] font-normal text-slate-400">
+                        {lesson.stepsCount || 5} Steps
+                      </span>
+                    </div>
+                    <h3 className="text-sm font-bold text-white truncate mt-1">
+                      {lesson.title}
+                    </h3>
+                    <p className="text-xs text-slate-400 truncate mt-0.5">
+                      {lesson.subtitle || lesson.description}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="w-8 h-8 rounded-full bg-white/10 border border-white/10 text-white flex items-center justify-center shrink-0 group-hover:bg-white group-hover:text-black transition-all ml-2">
+                  <ArrowRight size={14} />
                 </div>
               </div>
+            ))}
+          </div>
 
-              <div className="w-8 h-8 rounded-full bg-white/10 border border-white/10 text-white flex items-center justify-center shrink-0 group-hover:bg-white group-hover:text-black transition-all ml-2">
-                <ArrowRight size={14} />
+          {/* Process Passport Audit Banner */}
+          <div
+            onClick={() => {
+              sounds.playTap();
+              onOpenPassport();
+            }}
+            className="p-4 bg-[#12151E]/80 hover:bg-[#1A1E2C]/90 backdrop-blur-xl rounded-2xl border border-white/10 flex items-center justify-between cursor-pointer hover:border-white/20 transition-all shadow-md mt-2"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-white/10 border border-white/10 text-amber-400 flex items-center justify-center font-bold">
+                <ShieldCheck size={20} />
+              </div>
+              <div>
+                <h4 className="text-xs font-bold text-white">Process Passport Audit</h4>
+                <p className="text-[11px] text-slate-400">Review operational controls & safety rules</p>
               </div>
             </div>
-          ))}
+            <span className="text-xs font-semibold text-slate-300 bg-white/10 px-3 py-1 rounded-full border border-white/10">
+              Review →
+            </span>
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* 3. Process Passport Review Banner */}
-      <div
-        onClick={() => {
-          sounds.playTap();
-          onOpenPassport();
-        }}
-        className="p-4 bg-[#12151E]/80 hover:bg-[#1A1E2C]/90 backdrop-blur-xl rounded-2xl border border-white/10 flex items-center justify-between cursor-pointer hover:border-white/20 transition-all shadow-md"
-      >
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-white/10 border border-white/10 text-amber-400 flex items-center justify-center font-bold">
-            <ShieldCheck size={20} />
+      {/* TAB 2: STANDALONE QUIZZES */}
+      {activeTab === 'quiz' && (
+        <div className="space-y-4 animate-in fade-in duration-200">
+          <div className="flex items-center justify-between px-1">
+            <div>
+              <h2 className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
+                <Award size={14} className="text-amber-400" />
+                <span>Standalone Quizzes</span>
+              </h2>
+              <p className="text-[11px] text-slate-400 mt-0.5">
+                Test operational knowledge and compliance with standalone quizzes
+              </p>
+            </div>
+            <span className="text-xs font-bold text-slate-400 bg-white/10 px-2.5 py-1 rounded-full border border-white/10">
+              {standaloneQuizzes.length} Quizzes
+            </span>
           </div>
-          <div>
-            <h4 className="text-xs font-bold text-white">Process Passport Audit</h4>
-            <p className="text-[11px] text-slate-400">Review operational controls & safety rules</p>
+
+          <div className="space-y-3">
+            {standaloneQuizzes.map((quiz) => (
+              <div
+                key={quiz.id}
+                onClick={() => {
+                  sounds.playTap();
+                  onSelectSop(quiz.lessonId, quiz.title);
+                }}
+                className={`p-4 bg-gradient-to-r ${quiz.color} bg-[#12151E]/90 hover:bg-[#1A1E2C]/95 backdrop-blur-xl rounded-2xl border ${quiz.borderColor} shadow-lg transition-all cursor-pointer space-y-3 group active:scale-[0.99]`}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-md bg-white/10 text-white border border-white/10">
+                        {quiz.category}
+                      </span>
+                      <span className="text-[10px] font-semibold text-slate-300">
+                        {quiz.questionsCount} Questions · {quiz.duration}
+                      </span>
+                      <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                        Pass: {quiz.passingScore}
+                      </span>
+                    </div>
+                    <h3 className="text-sm font-black text-white group-hover:text-amber-300 transition-colors">
+                      {quiz.title}
+                    </h3>
+                  </div>
+
+                  <div className="w-9 h-9 rounded-xl bg-white/10 border border-white/15 text-white flex items-center justify-center shrink-0 group-hover:bg-amber-400 group-hover:text-black transition-all">
+                    <Zap size={16} />
+                  </div>
+                </div>
+
+                <p className="text-xs text-slate-300 leading-relaxed font-normal">
+                  {quiz.description}
+                </p>
+
+                <div className="pt-1 flex items-center justify-between border-t border-white/10 text-xs">
+                  <span className="text-slate-400 font-medium">Standalone Quiz</span>
+                  <span className="text-amber-300 font-bold flex items-center gap-1 group-hover:translate-x-1 transition-transform">
+                    <span>Take Quiz</span>
+                    <ArrowRight size={13} />
+                  </span>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
-        <span className="text-xs font-semibold text-slate-300 bg-white/10 px-3 py-1 rounded-full border border-white/10">
-          Review →
-        </span>
-      </div>
+      )}
+
+      {/* TAB 3: OTHER (Empty for a while) */}
+      {activeTab === 'other' && (
+        <div className="space-y-4 animate-in fade-in duration-200">
+          <div className="text-center py-12 px-6 bg-[#12151E]/80 backdrop-blur-xl rounded-3xl border border-white/10 space-y-3">
+            <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center mx-auto text-slate-400">
+              <Sparkles size={22} className="text-slate-400" />
+            </div>
+            <div className="space-y-1">
+              <h3 className="text-sm font-bold text-white">Other Resources & Tools</h3>
+              <p className="text-xs text-slate-400 max-w-xs mx-auto leading-relaxed">
+                This space is currently empty as requested. Custom extensions and supplementary media decks will appear here.
+              </p>
+            </div>
+            <div className="pt-2">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[11px] font-medium text-slate-400">
+                <span>Reserved Section</span>
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );
 };
+
 

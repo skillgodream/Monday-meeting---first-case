@@ -30,7 +30,8 @@ import {
   AlertCircle,
   ArrowUpRight,
   TrendingUp,
-  ChevronDown
+  ChevronDown,
+  HelpCircle
 } from 'lucide-react';
 import { Lesson } from '../types';
 import { INITIAL_LESSONS } from '../data/lessonsData';
@@ -53,7 +54,8 @@ export type AdminViewMode =
   | 'settings'
   | 'repository'
   | 'reports'
-  | 'control_tower';
+  | 'control_tower'
+  | 'quiz';
 
 export interface UserItem {
   id: string;
@@ -160,6 +162,129 @@ export default function AdminDashboardView({
 
   // Control Tower Time Filter
   const [timePeriod, setTimePeriod] = useState<string>('Last 30 Days');
+
+  // Quiz Creator State
+  const [quizTitleInput, setQuizTitleInput] = useState('');
+  const [quizInputType, setQuizInputType] = useState<'upload' | 'paste'>('paste');
+  const [quizPastedText, setQuizPastedText] = useState('');
+  const [quizSelectedFile, setQuizSelectedFile] = useState<File | null>(null);
+  const [quizQuestionType, setQuizQuestionType] = useState<'MCQ' | 'Fill in the Blanks' | 'True/False' | 'Mixed'>('MCQ');
+  const [quizNumQuestions, setQuizNumQuestions] = useState<number>(5);
+  const [quizPassingScore, setQuizPassingScore] = useState<number>(80);
+
+  const [createdQuizResult, setCreatedQuizResult] = useState<{
+    id: string;
+    title: string;
+    questionType: string;
+    numQuestions: number;
+    passingScore: number;
+    createdDate: string;
+    questions: Array<{
+      id: number;
+      question: string;
+      type: string;
+      options?: string[];
+      correctAnswer: string;
+    }>;
+  } | null>(null);
+
+  const handleGenerateQuiz = () => {
+    sounds.playCorrect();
+    const titleToUse = quizTitleInput.trim() || 'Operations & Safety Quiz';
+    
+    const sampleQuestions: Array<{
+      id: number;
+      question: string;
+      type: string;
+      options?: string[];
+      correctAnswer: string;
+    }> = [];
+
+    const mcqPool = [
+      {
+        question: "What is the mandatory surface dwell time for hospital-grade disinfectant?",
+        options: ["30 Seconds", "2 Minutes", "5 Minutes", "10 Minutes"],
+        correctAnswer: "5 Minutes"
+      },
+      {
+        question: "Which PPE item must be donned first before entering cleanroom bays?",
+        options: ["Sterile Gloves", "Bouffant Hair Net", "Shoe Covers", "Safety Goggles"],
+        correctAnswer: "Shoe Covers"
+      },
+      {
+        question: "How often must high-touch floor surfaces undergo cycle sanitization audits?",
+        options: ["Every Shift (8 Hours)", "Daily", "Weekly", "Monthly"],
+        correctAnswer: "Every Shift (8 Hours)"
+      },
+      {
+        question: "What action is required if barcode scanner fails 3 consecutive item reads?",
+        options: ["Override manually", "Log error & switch scanner unit", "Ignore and skip item", "Restart warehouse terminal"],
+        correctAnswer: "Log error & switch scanner unit"
+      },
+      {
+        question: "What is the maximum allowed stack height for Pallet Rack Zone B?",
+        options: ["2 Levels", "4 Levels", "6 Levels", "8 Levels"],
+        correctAnswer: "4 Levels"
+      }
+    ];
+
+    const fillPool = [
+      {
+        question: "High-bay forklift operators must perform a _____ check before every shift.",
+        correctAnswer: "pre-operational hydraulic & safety"
+      },
+      {
+        question: "Aseptic hand hygiene scrubbing requires at least _____ seconds with antimicrobial soap.",
+        correctAnswer: "60"
+      },
+      {
+        question: "Damaged inventory packages must be routed directly to the _____ quarantine area.",
+        correctAnswer: "QA hold"
+      },
+      {
+        question: "Chemical disinfectant containers must be clearly labeled with the _____ date.",
+        correctAnswer: "dilution / expiration"
+      },
+      {
+        question: "ESD grounding wrist straps must be tested at the _____ station before line access.",
+        correctAnswer: "ESD test"
+      }
+    ];
+
+    for (let i = 0; i < quizNumQuestions; i++) {
+      if (quizQuestionType === 'Fill in the Blanks') {
+        const item = fillPool[i % fillPool.length];
+        sampleQuestions.push({
+          id: i + 1,
+          question: item.question,
+          type: 'Fill in the Blanks',
+          correctAnswer: item.correctAnswer
+        });
+      } else {
+        const item = mcqPool[i % mcqPool.length];
+        sampleQuestions.push({
+          id: i + 1,
+          question: item.question,
+          type: 'MCQ',
+          options: item.options,
+          correctAnswer: item.correctAnswer
+        });
+      }
+    }
+
+    const newQuiz = {
+      id: `quiz_${Date.now()}`,
+      title: titleToUse,
+      questionType: quizQuestionType,
+      numQuestions: sampleQuestions.length,
+      passingScore: quizPassingScore,
+      createdDate: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+      questions: sampleQuestions
+    };
+
+    setCreatedQuizResult(newQuiz);
+    showToast(`Quiz '${newQuiz.title}' created successfully!`);
+  };
 
   // Toast State
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -299,7 +424,11 @@ export default function AdminDashboardView({
               ? 'Assignments'
               : activeViewMode === 'repository'
               ? 'Content Library'
-              : 'Training Readiness'}
+              : activeViewMode === 'reports'
+              ? 'Reports & Analytics'
+              : activeViewMode === 'quiz'
+              ? 'Quiz Management'
+              : 'Control Tower'}
           </h1>
           <p className="text-xs text-[#8E8E93] font-normal leading-relaxed">
             {activeViewMode === 'landing'
@@ -312,6 +441,10 @@ export default function AdminDashboardView({
               ? 'Deploy mandatory procedures and track frontline compliance.'
               : activeViewMode === 'repository'
               ? 'Scan, upload and manage SOPs and training content.'
+              : activeViewMode === 'reports'
+              ? 'Track progress, completion and key insights.'
+              : activeViewMode === 'quiz'
+              ? 'Upload documents or paste content to generate standalone quizzes.'
               : 'Track progress, completion and key insights.'}
           </p>
         </div>
@@ -404,7 +537,7 @@ export default function AdminDashboardView({
               className="p-4 sm:p-5 bg-[#0A0A0C] hover:bg-[#121215] rounded-2xl border border-white/10 flex items-center justify-between cursor-pointer transition-all active:scale-[0.99]"
             >
               <div className="flex items-center gap-4 min-w-0">
-                <div className="w-11 h-11 rounded-full bg-[#1C1C1E] border border-white/10 text-white flex items-center justify-center shrink-0">
+                <div className="w-11 h-11 rounded-full bg-[#1C1C1E] border border-white/10 text-[#8E8E93] flex items-center justify-center shrink-0">
                   <Settings size={20} />
                 </div>
                 <div className="min-w-0">
@@ -424,25 +557,25 @@ export default function AdminDashboardView({
               Quick Access
             </h3>
 
-            <div className="grid grid-cols-2 gap-3.5">
+            <div className="grid grid-cols-3 gap-2.5 sm:gap-3.5">
               {/* Card 1: SOP Repository */}
               <div
                 onClick={() => {
                   sounds.playTap();
                   setActiveViewMode('repository');
                 }}
-                className="p-4 bg-[#0A0A0C] hover:bg-[#121215] rounded-2xl border border-white/10 flex flex-col justify-between cursor-pointer transition-all active:scale-[0.98] h-36"
+                className="p-3 sm:p-4 bg-[#0A0A0C] hover:bg-[#121215] rounded-2xl border border-white/10 flex flex-col justify-between cursor-pointer transition-all active:scale-[0.98] h-36"
               >
                 <div className="flex items-center justify-between">
-                  <div className="w-9 h-9 rounded-xl bg-[#1C1C1E] text-white flex items-center justify-center border border-white/10">
-                    <BookOpen size={18} />
+                  <div className="w-8 h-8 rounded-xl bg-[#1C1C1E] text-white flex items-center justify-center border border-white/10 shrink-0">
+                    <BookOpen size={16} />
                   </div>
-                  <ChevronRight size={16} className="text-[#8E8E93]" />
+                  <ChevronRight size={15} className="text-[#8E8E93]" />
                 </div>
                 <div>
-                  <h4 className="text-sm font-bold text-white tracking-tight">SOP Repository</h4>
-                  <p className="text-[11px] text-[#8E8E93] font-normal mt-0.5 line-clamp-2">
-                    Browse, upload and manage content
+                  <h4 className="text-xs sm:text-sm font-bold text-white tracking-tight leading-tight">SOP Repository</h4>
+                  <p className="text-[10px] text-[#8E8E93] font-normal mt-0.5 line-clamp-2">
+                    Browse & manage content
                   </p>
                 </div>
               </div>
@@ -453,18 +586,40 @@ export default function AdminDashboardView({
                   sounds.playTap();
                   setActiveViewMode('reports');
                 }}
-                className="p-4 bg-[#0A0A0C] hover:bg-[#121215] rounded-2xl border border-white/10 flex flex-col justify-between cursor-pointer transition-all active:scale-[0.98] h-36"
+                className="p-3 sm:p-4 bg-[#0A0A0C] hover:bg-[#121215] rounded-2xl border border-white/10 flex flex-col justify-between cursor-pointer transition-all active:scale-[0.98] h-36"
               >
                 <div className="flex items-center justify-between">
-                  <div className="w-9 h-9 rounded-xl bg-[#1C1C1E] text-white flex items-center justify-center border border-white/10">
-                    <BarChart2 size={18} />
+                  <div className="w-8 h-8 rounded-xl bg-[#1C1C1E] text-white flex items-center justify-center border border-white/10 shrink-0">
+                    <BarChart2 size={16} />
                   </div>
-                  <ChevronRight size={16} className="text-[#8E8E93]" />
+                  <ChevronRight size={15} className="text-[#8E8E93]" />
                 </div>
                 <div>
-                  <h4 className="text-sm font-bold text-white tracking-tight">Reports</h4>
-                  <p className="text-[11px] text-[#8E8E93] font-normal mt-0.5 line-clamp-2">
-                    View training progress and analytics
+                  <h4 className="text-xs sm:text-sm font-bold text-white tracking-tight leading-tight">Reports</h4>
+                  <p className="text-[10px] text-[#8E8E93] font-normal mt-0.5 line-clamp-2">
+                    View progress & analytics
+                  </p>
+                </div>
+              </div>
+
+              {/* Card 3: Quiz */}
+              <div
+                onClick={() => {
+                  sounds.playTap();
+                  setActiveViewMode('quiz');
+                }}
+                className="p-3 sm:p-4 bg-[#0A0A0C] hover:bg-[#121215] rounded-2xl border border-white/10 flex flex-col justify-between cursor-pointer transition-all active:scale-[0.98] h-36"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="w-8 h-8 rounded-xl bg-[#1C1C1E] text-white flex items-center justify-center border border-white/10 shrink-0">
+                    <HelpCircle size={16} />
+                  </div>
+                  <ChevronRight size={15} className="text-[#8E8E93]" />
+                </div>
+                <div>
+                  <h4 className="text-xs sm:text-sm font-bold text-white tracking-tight leading-tight">Quiz</h4>
+                  <p className="text-[10px] text-[#8E8E93] font-normal mt-0.5 line-clamp-2">
+                    Upload or paste to create
                   </p>
                 </div>
               </div>
@@ -1079,6 +1234,319 @@ export default function AdminDashboardView({
               </div>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* QUIZ VIEW (Creation Form & Simple Quiz Layout After Creation)              */}
+      {/* ========================================================================= */}
+      {activeViewMode === 'quiz' && (
+        <div className="space-y-6 animate-in fade-in duration-200">
+          
+          {createdQuizResult ? (
+            /* SIMPLE QUIZ LAYOUT AFTER CREATION */
+            <div className="space-y-5">
+              {/* Top Banner / Confirmation */}
+              <div className="p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-2xl flex items-center justify-between text-emerald-300">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center shrink-0">
+                    <CheckCircle2 size={18} className="text-emerald-400" />
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold text-white">Quiz Generated Successfully</h4>
+                    <p className="text-[11px] text-emerald-300/80">Ready for review or deployment to frontline learners</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    sounds.playTap();
+                    setCreatedQuizResult(null);
+                  }}
+                  className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-semibold cursor-pointer transition-all"
+                >
+                  Create Another
+                </button>
+              </div>
+
+              {/* Quiz Summary Header Card */}
+              <div className="p-5 bg-[#0A0A0C] border border-white/10 rounded-2xl space-y-3">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-white/10 text-slate-300 border border-white/10">
+                      {createdQuizResult.questionType}
+                    </span>
+                    <h2 className="text-xl font-extrabold text-white mt-1.5">{createdQuizResult.title}</h2>
+                    <p className="text-xs text-[#8E8E93] mt-0.5">Created on {createdQuizResult.createdDate}</p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <div className="text-lg font-black text-white">{createdQuizResult.numQuestions}</div>
+                    <div className="text-[10px] font-semibold text-[#8E8E93] uppercase">Questions</div>
+                  </div>
+                </div>
+
+                <div className="pt-2 border-t border-white/10 flex items-center justify-between text-xs text-slate-300">
+                  <span className="flex items-center gap-1.5">
+                    <Award size={14} className="text-amber-400" />
+                    <span>Passing Score: <strong className="text-white">{createdQuizResult.passingScore}%</strong></span>
+                  </span>
+                  <span className="text-[11px] text-slate-400">Status: <strong className="text-emerald-400 font-bold">Active Draft</strong></span>
+                </div>
+              </div>
+
+              {/* Simple Quiz Layout: Questions List */}
+              <div className="space-y-3">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-[#8E8E93] px-1">
+                  Generated Questions ({createdQuizResult.questions.length})
+                </h3>
+
+                <div className="space-y-3">
+                  {createdQuizResult.questions.map((q, idx) => (
+                    <div key={q.id} className="p-4 bg-[#0A0A0C] border border-white/10 rounded-2xl space-y-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <span className="text-xs font-bold text-white shrink-0 bg-[#1C1C1E] px-2.5 py-1 rounded-lg border border-white/10">
+                          Q{idx + 1}
+                        </span>
+                        <p className="text-sm font-semibold text-white flex-1 leading-snug">
+                          {q.question}
+                        </p>
+                      </div>
+
+                      {/* Options or Answer Key */}
+                      {q.options && q.options.length > 0 ? (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 pl-8">
+                          {q.options.map((opt, optIdx) => {
+                            const isCorrect = opt === q.correctAnswer;
+                            return (
+                              <div
+                                key={optIdx}
+                                className={`p-2.5 rounded-xl border text-xs font-medium flex items-center justify-between ${
+                                  isCorrect
+                                    ? 'bg-emerald-500/10 border-emerald-500/40 text-emerald-300 font-bold'
+                                    : 'bg-[#1C1C1E] border-white/10 text-slate-300'
+                                }`}
+                              >
+                                <span>{String.fromCharCode(65 + optIdx)}. {opt}</span>
+                                {isCorrect && <CheckCircle2 size={14} className="text-emerald-400 shrink-0" />}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <div className="pl-8 text-xs text-slate-300 bg-[#1C1C1E] p-3 rounded-xl border border-white/10 flex items-center justify-between">
+                          <span className="text-slate-400">Answer Key:</span>
+                          <span className="font-bold text-emerald-400">{q.correctAnswer}</span>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="pt-2 flex items-center justify-end gap-3">
+                <button
+                  onClick={() => {
+                    sounds.playTap();
+                    setCreatedQuizResult(null);
+                  }}
+                  className="px-4 py-2.5 rounded-xl bg-[#1C1C1E] hover:bg-[#2C2C2E] border border-white/10 text-white text-xs font-bold cursor-pointer transition-all"
+                >
+                  Create Another Quiz
+                </button>
+                <button
+                  onClick={() => {
+                    sounds.playCorrect();
+                    showToast(`Quiz '${createdQuizResult.title}' saved to Frontline standalone quizzes.`);
+                    setActiveViewMode('landing');
+                  }}
+                  className="px-5 py-2.5 rounded-xl bg-white text-black hover:bg-slate-100 font-bold text-xs cursor-pointer shadow-lg transition-all"
+                >
+                  Save & Deploy Quiz
+                </button>
+              </div>
+            </div>
+          ) : (
+            /* CREATION FORM (Upload or Copy Paste Option & Settings) */
+            <div className="space-y-5">
+              {/* Card 1: Input Option (Upload or Copy Paste) */}
+              <div className="p-5 bg-[#0A0A0C] border border-white/10 rounded-2xl space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-bold text-white tracking-tight flex items-center gap-2">
+                    <HelpCircle size={16} className="text-amber-400" />
+                    <span>Select Source Input Method</span>
+                  </h3>
+                  <span className="text-[11px] text-[#8E8E93]">Upload or paste text</span>
+                </div>
+
+                {/* Input Method Segmented Toggle */}
+                <div className="grid grid-cols-2 gap-1.5 p-1 bg-[#1C1C1E] rounded-xl border border-white/10">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      sounds.playTap();
+                      setQuizInputType('upload');
+                    }}
+                    className={`py-2 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                      quizInputType === 'upload'
+                        ? 'bg-white text-black shadow-sm font-extrabold'
+                        : 'text-[#8E8E93] hover:text-white'
+                    }`}
+                  >
+                    <Upload size={14} />
+                    <span>Upload Option</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      sounds.playTap();
+                      setQuizInputType('paste');
+                    }}
+                    className={`py-2 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                      quizInputType === 'paste'
+                        ? 'bg-white text-black shadow-sm font-extrabold'
+                        : 'text-[#8E8E93] hover:text-white'
+                    }`}
+                  >
+                    <FileText size={14} />
+                    <span>Copy / Paste Option</span>
+                  </button>
+                </div>
+
+                {/* File Upload UI */}
+                {quizInputType === 'upload' && (
+                  <div className="space-y-2 animate-in fade-in duration-150">
+                    <label className="text-xs text-[#8E8E93] block font-medium">Upload Quiz Document or SOP File</label>
+                    <div
+                      onClick={() => {
+                        sounds.playTap();
+                        const input = document.createElement('input');
+                        input.type = 'file';
+                        input.accept = '.pdf,.docx,.txt,.csv';
+                        input.onchange = (e: any) => {
+                          if (e.target.files && e.target.files[0]) {
+                            setQuizSelectedFile(e.target.files[0]);
+                            if (!quizTitleInput) {
+                              setQuizTitleInput(e.target.files[0].name.replace(/\.[^/.]+$/, "") + " Quiz");
+                            }
+                            showToast(`File '${e.target.files[0].name}' attached.`);
+                          }
+                        };
+                        input.click();
+                      }}
+                      className="p-6 border-2 border-dashed border-white/20 hover:border-white/40 bg-[#121215] hover:bg-[#1A1A1F] rounded-xl text-center cursor-pointer transition-all space-y-2 group"
+                    >
+                      <div className="w-10 h-10 rounded-full bg-[#1C1C1E] border border-white/10 text-white flex items-center justify-center mx-auto group-hover:scale-105 transition-transform">
+                        <Upload size={18} />
+                      </div>
+                      <p className="text-xs font-semibold text-white">
+                        {quizSelectedFile ? quizSelectedFile.name : 'Click to select PDF, DOCX, TXT, or CSV'}
+                      </p>
+                      <p className="text-[11px] text-[#8E8E93]">
+                        {quizSelectedFile ? `${(quizSelectedFile.size / 1024).toFixed(1)} KB uploaded` : 'Automatic question extraction engine ready'}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Paste Option UI */}
+                {quizInputType === 'paste' && (
+                  <div className="space-y-2 animate-in fade-in duration-150">
+                    <label className="text-xs text-[#8E8E93] block font-medium">Paste SOP Text, Questions or Guidelines</label>
+                    <textarea
+                      rows={4}
+                      value={quizPastedText}
+                      onChange={(e) => setQuizPastedText(e.target.value)}
+                      placeholder="Paste training notes, SOP rules, or raw question list here..."
+                      className="w-full p-3 rounded-xl bg-[#1C1C1E] border border-white/15 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-white/30 resize-none font-mono"
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* Card 2: Quiz Settings */}
+              <div className="p-5 bg-[#0A0A0C] border border-white/10 rounded-2xl space-y-4">
+                <h3 className="text-sm font-bold text-white tracking-tight flex items-center gap-2">
+                  <Settings size={16} className="text-indigo-400" />
+                  <span>Quiz Settings</span>
+                </h3>
+
+                <div className="space-y-3.5">
+                  {/* Title */}
+                  <div>
+                    <label className="text-xs text-[#8E8E93] block mb-1 font-medium">Quiz Title</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Room Sanitization & Dwell Time Drill"
+                      value={quizTitleInput}
+                      onChange={(e) => setQuizTitleInput(e.target.value)}
+                      className="w-full h-10 px-3 rounded-xl bg-[#1C1C1E] border border-white/15 text-xs text-white focus:outline-none focus:border-white/30 font-medium"
+                    />
+                  </div>
+
+                  {/* Generic Settings: Question Type & Num Questions */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {/* Question Type */}
+                    <div>
+                      <label className="text-xs text-[#8E8E93] block mb-1 font-medium">Question Format</label>
+                      <select
+                        value={quizQuestionType}
+                        onChange={(e) => setQuizQuestionType(e.target.value as any)}
+                        className="w-full h-10 px-3 rounded-xl bg-[#1C1C1E] border border-white/15 text-xs text-white focus:outline-none cursor-pointer font-medium"
+                      >
+                        <option value="MCQ">Multiple Choice (MCQ)</option>
+                        <option value="Fill in the Blanks">Fill in the Blanks</option>
+                        <option value="True/False">True / False</option>
+                        <option value="Mixed">Mixed Questions</option>
+                      </select>
+                    </div>
+
+                    {/* Number of Questions */}
+                    <div>
+                      <label className="text-xs text-[#8E8E93] block mb-1 font-medium">Number of Questions</label>
+                      <select
+                        value={quizNumQuestions}
+                        onChange={(e) => setQuizNumQuestions(Number(e.target.value))}
+                        className="w-full h-10 px-3 rounded-xl bg-[#1C1C1E] border border-white/15 text-xs text-white focus:outline-none cursor-pointer font-medium"
+                      >
+                        <option value={3}>3 Questions</option>
+                        <option value={5}>5 Questions</option>
+                        <option value={10}>10 Questions</option>
+                        <option value={15}>15 Questions</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Passing Threshold */}
+                  <div>
+                    <label className="text-xs text-[#8E8E93] block mb-1 font-medium">
+                      Passing Score Threshold ({quizPassingScore}%)
+                    </label>
+                    <input
+                      type="range"
+                      min={50}
+                      max={100}
+                      step={5}
+                      value={quizPassingScore}
+                      onChange={(e) => setQuizPassingScore(Number(e.target.value))}
+                      className="w-full accent-white cursor-pointer"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Generate Quiz CTA */}
+              <button
+                type="button"
+                onClick={handleGenerateQuiz}
+                className="w-full h-12 rounded-xl bg-white text-black font-bold text-sm flex items-center justify-center gap-2 hover:bg-slate-100 active:scale-[0.98] transition-all cursor-pointer shadow-lg"
+              >
+                <Plus size={18} />
+                <span>Create Quiz</span>
+              </button>
+            </div>
+          )}
+
         </div>
       )}
 

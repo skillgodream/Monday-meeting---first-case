@@ -135,7 +135,7 @@ export default function UploadModal({ isOpen, onClose, onUploadSuccess }: Upload
           <label className="border-2 border-dashed border-white/15 hover:border-[#0A84FF] bg-white/5 hover:bg-white/10 rounded-2xl p-8 flex flex-col items-center justify-center text-center cursor-pointer transition-all active:scale-[0.98]">
             <input
               type="file"
-              accept=".pdf,.docx,.doc,.txt,.md,.png,.jpg,.jpeg"
+              accept=".pdf,.pptx,.ppt,.docx,.doc,.txt,.md,.png,.jpg,.jpeg"
               className="hidden"
               onChange={handleFileUpload}
               disabled={isProcessing}
@@ -148,7 +148,7 @@ export default function UploadModal({ isOpen, onClose, onUploadSuccess }: Upload
                 ? `Extracting ${selectedFileName || 'file'}...`
                 : 'Choose or drop SOP file'}
             </p>
-            <p className="text-[10px] text-slate-400 mt-1">PDF, Word, or Text document</p>
+            <p className="text-[10px] text-slate-400 mt-1">PDF, PowerPoint (.pptx), Word, or Images</p>
           </label>
         ) : (
           <div className="space-y-3">

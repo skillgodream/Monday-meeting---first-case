@@ -4,6 +4,15 @@ export type CategoryType = 'All' | 'Picking' | 'Packing' | 'Safety' | 'Inventory
 
 export type ExperienceLevel = 'new' | 'some' | 'experienced';
 
+export interface SlidePage {
+  slideNumber: number;
+  title: string;
+  subtitle?: string;
+  bullets: string[];
+  rawContent: string;
+  imageDataUrl?: string;
+}
+
 export interface SourceMeta {
   filename: string;
   version: string;
@@ -12,6 +21,7 @@ export interface SourceMeta {
   wordCount: number;
   confirmationText: string;
   rawText?: string;
+  originalSlides?: SlidePage[];
 }
 
 export interface OperationalSourceRef {
@@ -227,6 +237,7 @@ export interface Lesson {
   createdAt?: string;
   isAssigned?: boolean;
   assignedStatus?: 'Assigned' | 'Not Assigned';
+  originalSlides?: SlidePage[];
 }
 
 export interface ToolItem {
