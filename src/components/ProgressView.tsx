@@ -303,7 +303,7 @@ export default function ProgressView({ lessons, onStartSimulation }: ProgressVie
             className="p-5 bg-[#0A0A0C] hover:bg-[#121215] rounded-[24px] border border-white/10 flex items-center justify-between cursor-pointer transition-all active:scale-[0.99] shadow-xl group"
           >
             <div className="flex items-center gap-4 min-w-0">
-              <div className="w-12 h-12 rounded-full bg-[#1C1C1E] border border-white/10 text-white flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+              <div className="w-12 h-12 rounded-full bg-transparent border-2 border-rose-500 text-rose-400 flex items-center justify-center shrink-0 group-hover:scale-105 group-hover:border-rose-400 transition-all">
                 <BookOpen size={20} />
               </div>
               <div className="min-w-0">
@@ -325,7 +325,7 @@ export default function ProgressView({ lessons, onStartSimulation }: ProgressVie
             className="p-5 bg-[#0A0A0C] hover:bg-[#121215] rounded-[24px] border border-white/10 flex items-center justify-between cursor-pointer transition-all active:scale-[0.99] shadow-xl group"
           >
             <div className="flex items-center gap-4 min-w-0">
-              <div className="w-12 h-12 rounded-full bg-[#1C1C1E] border border-white/10 text-white flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+              <div className="w-12 h-12 rounded-full bg-transparent border-2 border-rose-500 text-rose-400 flex items-center justify-center shrink-0 group-hover:scale-105 group-hover:border-rose-400 transition-all">
                 <FileText size={20} />
               </div>
               <div className="min-w-0">
@@ -347,7 +347,7 @@ export default function ProgressView({ lessons, onStartSimulation }: ProgressVie
             className="p-5 bg-[#0A0A0C] hover:bg-[#121215] rounded-[24px] border border-white/10 flex items-center justify-between cursor-pointer transition-all active:scale-[0.99] shadow-xl group"
           >
             <div className="flex items-center gap-4 min-w-0">
-              <div className="w-12 h-12 rounded-full bg-[#1C1C1E] border border-white/10 text-white flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+              <div className="w-12 h-12 rounded-full bg-transparent border-2 border-rose-500 text-rose-400 flex items-center justify-center shrink-0 group-hover:scale-105 group-hover:border-rose-400 transition-all">
                 <Settings size={20} />
               </div>
               <div className="min-w-0">

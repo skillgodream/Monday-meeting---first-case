@@ -551,7 +551,7 @@ export default function AdminDashboardView({
             </div>
           </div>
 
-          {/* B. Quick Access Section (Horizontal Cards) */}
+          {/* B. Quick Access Section (Horizontal Cards with Pink/Red Outlines) */}
           <div className="space-y-3 pt-1">
             <h3 className="text-base font-bold text-white tracking-tight px-1">
               Quick Access
@@ -564,13 +564,13 @@ export default function AdminDashboardView({
                   sounds.playTap();
                   setActiveViewMode('repository');
                 }}
-                className="p-3 sm:p-4 bg-[#0A0A0C] hover:bg-[#121215] rounded-2xl border border-white/10 flex flex-col justify-between cursor-pointer transition-all active:scale-[0.98] h-36"
+                className="p-3 sm:p-4 bg-[#0A0A0C] hover:bg-rose-950/20 rounded-2xl border border-rose-500/50 hover:border-rose-400 flex flex-col justify-between cursor-pointer transition-all active:scale-[0.98] h-36 shadow-md group"
               >
                 <div className="flex items-center justify-between">
-                  <div className="w-8 h-8 rounded-xl bg-[#1C1C1E] text-white flex items-center justify-center border border-white/10 shrink-0">
+                  <div className="w-8 h-8 rounded-xl bg-[#1C1C1E] text-rose-400 flex items-center justify-center border border-rose-500/30 shrink-0 group-hover:scale-105 transition-transform">
                     <BookOpen size={16} />
                   </div>
-                  <ChevronRight size={15} className="text-[#8E8E93]" />
+                  <ChevronRight size={15} className="text-[#8E8E93] group-hover:text-rose-400 transition-colors" />
                 </div>
                 <div>
                   <h4 className="text-xs sm:text-sm font-bold text-white tracking-tight leading-tight">SOP Repository</h4>
@@ -586,13 +586,13 @@ export default function AdminDashboardView({
                   sounds.playTap();
                   setActiveViewMode('reports');
                 }}
-                className="p-3 sm:p-4 bg-[#0A0A0C] hover:bg-[#121215] rounded-2xl border border-white/10 flex flex-col justify-between cursor-pointer transition-all active:scale-[0.98] h-36"
+                className="p-3 sm:p-4 bg-[#0A0A0C] hover:bg-rose-950/20 rounded-2xl border border-rose-500/50 hover:border-rose-400 flex flex-col justify-between cursor-pointer transition-all active:scale-[0.98] h-36 shadow-md group"
               >
                 <div className="flex items-center justify-between">
-                  <div className="w-8 h-8 rounded-xl bg-[#1C1C1E] text-white flex items-center justify-center border border-white/10 shrink-0">
+                  <div className="w-8 h-8 rounded-xl bg-[#1C1C1E] text-rose-400 flex items-center justify-center border border-rose-500/30 shrink-0 group-hover:scale-105 transition-transform">
                     <BarChart2 size={16} />
                   </div>
-                  <ChevronRight size={15} className="text-[#8E8E93]" />
+                  <ChevronRight size={15} className="text-[#8E8E93] group-hover:text-rose-400 transition-colors" />
                 </div>
                 <div>
                   <h4 className="text-xs sm:text-sm font-bold text-white tracking-tight leading-tight">Reports</h4>
@@ -608,13 +608,13 @@ export default function AdminDashboardView({
                   sounds.playTap();
                   setActiveViewMode('quiz');
                 }}
-                className="p-3 sm:p-4 bg-[#0A0A0C] hover:bg-[#121215] rounded-2xl border border-white/10 flex flex-col justify-between cursor-pointer transition-all active:scale-[0.98] h-36"
+                className="p-3 sm:p-4 bg-[#0A0A0C] hover:bg-rose-950/20 rounded-2xl border border-rose-500/50 hover:border-rose-400 flex flex-col justify-between cursor-pointer transition-all active:scale-[0.98] h-36 shadow-md group"
               >
                 <div className="flex items-center justify-between">
-                  <div className="w-8 h-8 rounded-xl bg-[#1C1C1E] text-white flex items-center justify-center border border-white/10 shrink-0">
+                  <div className="w-8 h-8 rounded-xl bg-[#1C1C1E] text-rose-400 flex items-center justify-center border border-rose-500/30 shrink-0 group-hover:scale-105 transition-transform">
                     <HelpCircle size={16} />
                   </div>
-                  <ChevronRight size={15} className="text-[#8E8E93]" />
+                  <ChevronRight size={15} className="text-[#8E8E93] group-hover:text-rose-400 transition-colors" />
                 </div>
                 <div>
                   <h4 className="text-xs sm:text-sm font-bold text-white tracking-tight leading-tight">Quiz</h4>
