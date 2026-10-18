@@ -983,24 +983,10 @@ export default function App() {
         currentStepTitle={currentContextTitle}
       />
 
-      {/* Floating Gyan AI Work Companion Entry Point */}
-      {currentUserRole === 'learn' && (
-        <button
-          onClick={() => {
-            sounds.playTap();
-            setIsGyanModalOpen(true);
-          }}
-          className="fixed bottom-24 right-5 z-40 px-4 py-2.5 rounded-full bg-blue-600 text-white hover:bg-blue-700 font-bold text-xs shadow-2xl border border-white/20 flex items-center gap-2 transition-all hover:scale-105 active:scale-95 cursor-pointer"
-          title="Ask Gyan AI Work Companion"
-        >
-          <Sparkles className="w-4 h-4 text-white animate-pulse" />
-          <span>Ask Gyan</span>
-        </button>
-      )}
-
-      {/* Gyan AI Work Companion Chat Modal */}
+      {/* Gyan AI Work Companion Side-Screen Pull-Out Drawer */}
       <GyanChatModal
         isOpen={isGyanModalOpen}
+        onOpen={() => setIsGyanModalOpen(true)}
         onClose={() => setIsGyanModalOpen(false)}
         activeLesson={selectedLesson || lessons[0]}
         onSelectLesson={(lessonId) => handleSelectSop(lessonId)}

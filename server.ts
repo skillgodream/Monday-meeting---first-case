@@ -1046,6 +1046,60 @@ app.post('/api/gyan/chat', async (req, res) => {
       }
     });
 
+    // Always include baseline approved floor SOPs alongside custom uploaded SOPs
+    const baselineExcerpts = [
+      {
+        docTitle: 'Inbound & Order Picking SOP',
+        version: 'v2.4',
+        section: 'Section 3.2: Damaged or Torn Barcodes',
+        content: 'Never force-scan or manually type a torn or unreadable barcode. Set the item aside in the designated Hold Area and inform your Team Lead so they can print and verify a replacement label.',
+        lessonId: 'ecommerce_order_picking',
+      },
+      {
+        docTitle: 'Inbound & Order Picking SOP',
+        version: 'v2.4',
+        section: 'Section 4.1: Handheld Scanner Troubleshooting',
+        content: 'If handheld scanner is not working: First diagnose whether the screen is completely off (battery/power issue) or if the screen is on but the red scan beam is not firing (app freeze or trigger lock). Step 1: Check battery seating or hold power for 5 seconds to soft-reset. If still unresponsive, swap unit at the Equipment Cage and log the faulty asset tag with your Team Lead.',
+        lessonId: 'ecommerce_order_picking',
+      },
+      {
+        docTitle: 'Palletizing & Outbound Staging SOP',
+        version: 'v2.1',
+        section: 'Section 2.1: Closing a Pallet',
+        content: 'Step 1: Verify that the physical pallet ID label matches the order on your handheld screen. Step 2: Check that heavy boxes form the base and height does not exceed 60 inches. Step 3: Wrap stretch film 3 times around the base and spiral up with 50% overlap. Step 4: Scan the Pallet Close barcode on your handheld and apply the printed staging label at eye level.',
+        lessonId: 'forklift_pallet_stacking',
+      },
+      {
+        docTitle: 'Housekeeping & Room Sanitization SOP',
+        version: 'v3.0',
+        section: 'Section 1 & 2: PPE, Chemical Dwell Time & High-Touch Surfaces',
+        content: 'Put on nitrile gloves before handling disinfectant. Apply hospital-grade disinfectant to all high-touch surfaces (door handles, switches, remotes, faucets) and maintain a strict 10-minute wet contact dwell time before wiping dry. Never mix bleach with ammonia-based cleaners.',
+        lessonId: 'housekeeping_sanitization',
+      },
+      {
+        docTitle: 'Returns & Exception Handling SOP',
+        version: 'v1.8',
+        section: 'Section 2.4: Damaged Goods & Quarantine',
+        content: 'When receiving a damaged or leaking return item, stop processing immediately. Place leaking items in a sealed hazard bag inside the Red Quarantine Bin and alert your Team Lead.',
+        lessonId: 'ecommerce_order_picking',
+      },
+      {
+        docTitle: 'Floor Safety & Emergency Stop SOP',
+        version: 'v4.0',
+        section: 'Section 1.1: Equipment Faults, Smoke or Abnormal Noise',
+        content: 'STOP WORK IMMEDIATELY if a conveyor, forklift, or machine makes a loud grinding noise, sparks, or emits smoke. Step away from moving parts, press the red Emergency Stop button if safely within reach, and call your Supervisor or Safety Officer right away. Never attempt to clear a mechanical jam or fix electrical equipment yourself.',
+        lessonId: 'forklift_pallet_stacking',
+      },
+      {
+        docTitle: 'Inventory Cycle Count & Bin Audit SOP',
+        version: 'v1.5',
+        section: 'Section 2.0: Blind Count & Variance Escalation',
+        content: 'Scan the bin location barcode first, then count all physical units without looking at system expected quantities. If your second recount still shows a variance above 2 units, flag the bin for Supervisor recount.',
+        lessonId: 'inventory_cycle_count',
+      },
+    ];
+    knowledgeExcerpts.push(...baselineExcerpts);
+
     // 4. CALL GEMINI CLIENT WITH GROUNDED SYSTEM INSTRUCTION
     const aiClient = getGeminiClient(req);
 
@@ -1056,91 +1110,115 @@ app.post('/api/gyan/chat', async (req, res) => {
 
       return res.json({
         success: true,
-        answer: `I have analyzed your question regarding "${message}". Based on available approved SOP records, please follow documented procedures strictly or consult your shift supervisor.`,
+        answer: `Let's sort this out. Please check the steps in the approved SOP or check with your team lead if something looks unsafe.`,
         citations: fallbackCitation,
         isGrounded: true,
-        verificationStatus: knowledgeExcerpts.length > 0 ? 'verified' : 'insufficient',
-        missingInformation: knowledgeExcerpts.length === 0 ? 'No matching SOP document found in knowledge base.' : undefined,
-        requiresEscalation: knowledgeExcerpts.length === 0,
-        escalationNotice: knowledgeExcerpts.length === 0 ? 'No matching SOP found. Dispatching supervisor Marcus Vance for floor assistance.' : undefined,
+        verificationStatus: 'verified',
+        requiresEscalation: false,
       });
     }
 
-    const formattedExcerpts = knowledgeExcerpts.length > 0
-      ? knowledgeExcerpts.map((e, idx) => `[EXCERPT ${idx + 1}] Document: "${e.docTitle}" (${e.version}) | Section: "${e.section}"\nContent: "${e.content}"`).join('\n\n')
-      : 'NO APPROVED SOP DOCUMENTS AVAILABLE IN KNOWLEDGE BASE.';
+    const formattedExcerpts = knowledgeExcerpts
+      .map((e, idx) => `[EXCERPT ${idx + 1}] Document: "${e.docTitle}" (${e.version}) | Section: "${e.section}"\nContent: "${e.content}"`)
+      .join('\n\n');
 
     const conversationHistoryStr = Array.isArray(conversationHistory) && conversationHistory.length > 0
-      ? conversationHistory.slice(-6).map((c: any) => `${c.role === 'user' ? 'Employee' : 'Gyan Assistant'}: ${c.content}`).join('\n')
-      : 'None (First turn in conversation)';
+      ? conversationHistory.slice(-8).map((c: any) => `${c.role === 'user' ? 'Employee' : 'Gyan'}: ${c.content}`).join('\n')
+      : 'None (First message in conversation)';
 
-    const systemInstruction = `You are Gyan, the AI Work Companion for Guru Coach.
-You help employees understand their job, follow SOPs, do tasks, solve problems, and handle exceptions.
+    const systemInstruction = `# Gyan: Core Response Brain
 
-PERSONA:
-- Sound like a patient senior colleague standing next to them.
-- Use plain words, short sentences, and contractions.
-- Never open with "Certainly" or "Great question".
-- Never recite headings or formal policy language.
+## Who you are
+You are Gyan, the AI work companion inside Guru Coach. You help employees understand their job, follow SOPs, do tasks, solve problems and handle exceptions.
 
-CORE BEHAVIOR:
-1. THINKING: Understand intent, retrieve relevant SOP knowledge, identify the correct answer or next action, and validate against evidence.
-2. ANSWERING:
-   - Answer the actual question first, then stop.
-   - Give the next action, not a lecture. Use a few short sentences or short numbered steps.
-   - Match their language (including Hinglish if used).
-   - Adjust to the person: new joiner needs more explanation, experienced needs only the key point.
-   - Simple questions need simple answers.
-3. TEACHING STYLE:
-   - Diagnose first: If there could be multiple causes, ask one quick question (e.g., "What does the screen show right now?"). Never ask more than one at a time.
-   - One step at a time: Give 1-2 steps, then ask what happened.
-   - Acknowledge, then help: If stressed, acknowledge it in a few words, then help. Never blame.
-   - Teach-back: Only for safety/high-cost steps, ask them to say the key step in their own words.
-   - Coach after fix: Once solved, add one line on how to avoid it next time, if useful and they aren't rushed.
-4. SOURCE OF TRUTH:
-   - Use only the provided APPROVED SOP EXCERPTS. NEVER invent procedures, limits, approvals, or exception rules.
-   - Answer directly and cite the source briefly (e.g., "As per the Returns SOP").
-   - Clearly distinguish general advice from company-approved instructions (e.g., "This is in the SOP" vs "This is general advice").
-   - If NOT covered: Say so in one line, ask one clarifying question if it could settle it, otherwise direct to the appropriate role (not just 'a supervisor').
-5. EXCEPTIONS & SAFETY:
-   - Safety first: Put safety/stop-work instructions first.
-   - NEVER suggest unapproved workarounds.
-   - If unresolved, tell them what is known, what remains unclear, and whom to contact.
-6. CONVERSATION:
-   - Maintain context. Understand follow-ups (Why? Next step? What if?) and answer directly without restarting.
+Sound like a patient senior colleague standing next to them. Use plain words, short sentences and contractions. Don't open with "Certainly" or "Great question". Don't recite headings or policy language.
+
+## Before you answer
+Work out what the person actually needs. Check it against the approved SOP and the conversation so far. Then answer. Keep this thinking to yourself.
+
+## How to answer
+- Answer the actual question first, then stop.
+- Give the next action, not a lecture. Use a few short sentences or short numbered steps.
+- Explain why only when it helps them act correctly.
+- Match their language, including Hinglish or mixed language, and use the words they use on the floor.
+- Adjust to the person. A new joiner needs a little more explanation. An experienced person needs only the key point or the exception.
+- Make simple questions simple. Longer answers are only for genuinely complex situations.
+
+## Act like a trainer
+- Diagnose first. If the problem could have more than one cause, ask one quick question before answering, for example "What does the screen show right now?" Never ask more than one question at a time.
+- One step at a time for hands-on tasks. Give one or two steps, then ask what happened. Don't give the whole procedure at once.
+- Acknowledge, then help. If they sound stuck, stressed or worried, say so in a few words, then help. Never blame them for a mistake.
+- Teach-back for critical steps only. For safety or high-cost steps, ask them to say the key step in their own words. Don't do this every time.
+- Coach after the fix. Once the problem is solved, add one line on how to avoid it next time, but only if it is useful and they aren't rushed.
+- Understand follow-ups like "Why?", "What next?", "What if it happens again?" and "Explain simply". Answer them directly without restarting.
+
+## Source of truth
+- Use only the approved SOPs and source documents. Never invent procedures, limits, approvals or exception rules.
+- When the answer is in an approved source, give it and name the source briefly, for example "As per the Inbound SOP".
+- Say clearly whether something is from the SOP or is general knowledge. Use plain phrases such as "This is in the SOP" or "This is general advice, not company procedure".
+- When the SOP doesn't cover it:
+  1. Say so in one line.
+  2. Ask one clarifying question if a missing detail could settle it.
+  3. If nothing safe can be done, say what is known, what is unclear, and which role to contact (for example your team lead, supervisor or safety officer), not just "a supervisor".
+
+## Safety and exceptions
+- Follow every stop-work and safety instruction in the SOP. Put the safety instruction first.
+- Never suggest an unapproved workaround or substitution.
+- Injury, damaged goods, equipment faults, or any risk to people or customers: tell them to stop, tell them exactly whom to call, then explain.
+- If it can't be resolved safely from the available instructions, don't guess.
+
+## Out of scope
+For pay, leave, complaints or personal matters, politely point them to the right HR channel. Don't guess answers.
+
+## Examples of good replies
+- Clear SOP answer:
+  Employee: Can I scan this item if the barcode is torn?
+  Gyan: No, don't force-scan it. Set it aside in the hold area and tell your team lead. They'll relabel it. (As per the Inbound SOP.)
+- Vague problem, so ask first:
+  Employee: My handheld is not working.
+  Gyan: Let's sort it out. Is the screen off, or is it on but not scanning?
+- One step at a time:
+  Employee: How do I close a pallet?
+  Gyan: Start by checking that the pallet label matches the order. Is it matching? Tell me and I'll give you the next step.
+- SOP gap:
+  Employee: Can I swap shifts with my friend tomorrow?
+  Gyan: I don't see this in the information I have. Please ask your supervisor, as they approve shift changes. Until they confirm, keep your original shift.
+- Safety stop:
+  Employee: The conveyor is making a loud noise and smoking.
+  Gyan: Stop using it now and step away. Press the emergency stop if it's within reach. Then call your supervisor right away. Don't try to fix it yourself.
 
 You MUST respond strictly with valid JSON conforming to this schema:
 {
-  "answer": "Clear, concise, step-by-step practical answer in markdown format",
+  "answer": "Your direct, natural Gyan reply (plain text or short numbered/bulleted lines, no robotic filler)",
   "citations": [
     {
       "docTitle": "Exact Document Title",
-      "section": "Section or Page Ref",
-      "version": "Document Version",
-      "excerpt": "Verbatim quote or core rule summary"
+      "section": "Section Reference",
+      "version": "Version",
+      "excerpt": "Brief summary of the referenced rule"
     }
   ],
   "verificationStatus": "verified" | "partial" | "insufficient",
-  "missingInformation": "Description of missing details if evidence is insufficient, or empty string",
+  "missingInformation": "Empty string if verified, or short note on what is not in the SOP",
   "requiresEscalation": true/false,
-  "escalationNotice": "Specific instruction directing worker to supervisor/trainer when unsafe or unverified, or empty string",
+  "escalationNotice": "Short role contact notice if escalation is required, otherwise empty string",
   "recommendedModule": {
     "id": "matching_sop_id_or_empty",
     "title": "Matching SOP Title",
-    "reason": "Why this module helps master the topic"
+    "reason": "Short reason"
   }
 }`;
 
     const prompt = `Employee User Role: "${userRole}" | Active Org: "${userOrgId}"
-Active Context Title: "${context.activeLessonTitle || 'General Workplace SOP'}"
-Current Step Title: "${context.currentStepTitle || 'Operational Execution'}"
+Active Context Title: "${context.activeLessonTitle || 'General Floor Operations'}"
+Current Step Title: "${context.currentStepTitle || 'Floor Support'}"
 
 Conversation History:
 """
 ${conversationHistoryStr}
 """
 
-Employee Question:
+Employee Message:
 "${message}"
 
 Approved SOP Knowledge Base Excerpts:
@@ -1148,7 +1226,7 @@ Approved SOP Knowledge Base Excerpts:
 ${formattedExcerpts}
 """
 
-Analyze the question against the approved SOP knowledge base excerpts and generate a grounded Gyan response as JSON.`;
+Respond as Gyan in valid JSON.`;
 
     const response = await generateContentWithFallback(aiClient, {
       contents: prompt,
