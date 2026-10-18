@@ -4,24 +4,17 @@
  */
 
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { Camera, Upload, BookOpen, Sparkles, ChevronRight, X, ShieldCheck, Users, GraduationCap } from 'lucide-react';
-import BottomNav from './components/BottomNav';
-import GyanChatModal from './components/GyanChatModal';
-import ValidationErrorModal from './components/ValidationErrorModal';
 import { MeetGurujiScreen } from './screens/MeetGurujiScreen';
-
-import { INITIAL_LESSONS } from './data/lessonsData';
-import { buildProcessPassport, perceiveImage } from './utils/blueprintEngine';
 import { ProcessPassport, PerceiveObservation, TabType, Lesson, ExperienceLevel } from './types';
 import { sounds } from './utils/audio';
-import { planSlides } from './experiment/Planner';
 import type { ExtractedDocument } from './utils/documentExtractor';
-import { validateSourceFidelity } from './utils/sourceValidator';
-import { generateDomainNeutralLesson } from './utils/domainNeutralGenerator';
 import { getApiHeaders } from './utils/apiHelper';
 import RoleNavigationModal, { UserRole } from './components/RoleNavigationModal';
 
-// Code-split heavy modals & secondary views so initial bundle loads instantaneously
+// Code-split heavy modals, navigation & secondary views so initial bundle loads in <200ms
+const BottomNav = React.lazy(() => import('./components/BottomNav'));
+const GyanChatModal = React.lazy(() => import('./components/GyanChatModal'));
+const ValidationErrorModal = React.lazy(() => import('./components/ValidationErrorModal'));
 const HomeScreen = React.lazy(() =>
   import('./screens/HomeScreen').then((m) => ({ default: m.HomeScreen }))
 );
@@ -90,7 +83,7 @@ export default function App() {
   }, []);
 
   const [activeTab, setActiveTab] = useState<TabType>('home');
-  const [lessons, setLessons] = useState<Lesson[]>(INITIAL_LESSONS);
+  const [lessons, setLessons] = useState<Lesson[]>([]);
   const [showBentoShowcase, setShowBentoShowcase] = useState<boolean>(false);
   const [isSopOptionsOpen, setIsSopOptionsOpen] = useState<boolean>(false);
   const [showGurujiHome, setShowGurujiHome] = useState<boolean>(true);
@@ -99,7 +92,14 @@ export default function App() {
   const [currentUserRole, setCurrentUserRole] = useState<UserRole>(() => {
     return (localStorage.getItem('guruji_user_role') as UserRole) || 'learn';
   });
-  const [isRoleModalOpen, setIsRoleModalOpen] = useState<boolean>(false);
+  // If user clicked the instant HTML shell before React mounted, open Role Modal immediately
+  const [isRoleModalOpen, setIsRoleModalOpen] = useState<boolean>(() => {
+    const clickedEarly = Boolean((window as any).__gurujiExploreClicked);
+    if (clickedEarly) {
+      (window as any).__gurujiExploreClicked = false;
+    }
+    return clickedEarly;
+  });
 
   // Navigation & Flow State:
   const [isScanOpen, setIsScanOpen] = useState<boolean>(false);
@@ -118,13 +118,10 @@ export default function App() {
     filename?: string;
   } | null>(null);
 
-  const [activePassport, setActivePassport] = useState<ProcessPassport>(() =>
-    buildProcessPassport('Warehouse Order Picking', 'Picker')
-  );
-  const [perceiveObservation, setPerceiveObservation] = useState<PerceiveObservation>(() =>
-    perceiveImage('SOP_Page.png')
-  );
+  const [activePassport, setActivePassport] = useState<ProcessPassport | null>(null);
+  const [perceiveObservation, setPerceiveObservation] = useState<PerceiveObservation | null>(null);
   const [isPassportModalOpen, setIsPassportModalOpen] = useState<boolean>(false);
+  const [activeDeckPlan, setActiveDeckPlan] = useState<any>(null);
 
   // Onboarding Journey States:
   const [welcomeLesson, setWelcomeLesson] = useState<Lesson | null>(null);
@@ -180,62 +177,95 @@ export default function App() {
     }
   }, []);
 
-  // Fetch all persisted SOPs from Firestore database & server repository on initial mount
+  // Hydrate initial lessons and prefetch key views right after first paint
   useEffect(() => {
-    const fetchRepositorySops = async () => {
-      // 1. Fetch from Firestore Database (Authoritative Store)
-      try {
-        const { getAllSopsFromFirestore } = await import('./services/firestorePersistence');
-        const firestoreSops = await getAllSopsFromFirestore();
-        if (firestoreSops && firestoreSops.length > 0) {
-          setLessons((prev) => {
-            const incomingIds = new Set(firestoreSops.map((s) => s.id));
-            const existingNonDuplicates = prev.filter((l) => !incomingIds.has(l.id));
-            return [...firestoreSops, ...existingNonDuplicates];
-          });
-          console.log(`[Firestore Sync] Hydrated ${firestoreSops.length} persistent modules from Firestore.`);
-          return;
-        }
-      } catch (fsErr) {
-        console.warn('[Firestore Sync] Could not fetch from Firestore, trying server repo:', fsErr);
+    let cancelled = false;
+    import('./data/lessonsData').then(({ INITIAL_LESSONS }) => {
+      if (!cancelled) {
+        setLessons((prev) => (prev.length === 0 ? INITIAL_LESSONS : prev));
       }
+    });
 
-      // 2. Fallback to Server Disk Repository
+    // Background prefetch of LibraryView & GyanChatModal after initial interaction is ready
+    const prefetchTimer = setTimeout(() => {
+      import('./components/LibraryView');
+      import('./components/GyanChatModal');
+    }, 250);
+
+    const fetchRepositorySops = async () => {
+      // 1. Fast Local & Server Repository Fetch First
       try {
         const res = await fetch('/api/repository/sops');
         const data = await res.json();
-        if (data.success && Array.isArray(data.sops) && data.sops.length > 0) {
+        if (!cancelled && data.success && Array.isArray(data.sops) && data.sops.length > 0) {
           setLessons((prev) => {
             const incomingIds = new Set(data.sops.map((s: any) => s.id));
             const existingNonDuplicates = prev.filter((l) => !incomingIds.has(l.id));
             return [...data.sops, ...existingNonDuplicates];
           });
-          return;
         }
       } catch (err) {
-        console.warn('[Repository Sync] Could not fetch server repository:', err);
+        // fallback to localStorage
+        try {
+          const cached = JSON.parse(localStorage.getItem('guruji_sop_repository') || '[]');
+          if (!cancelled && Array.isArray(cached) && cached.length > 0) {
+            setLessons((prev) => {
+              const incomingIds = new Set(cached.map((s: any) => s.id));
+              const existingNonDuplicates = prev.filter((l) => !incomingIds.has(l.id));
+              return [...cached, ...existingNonDuplicates];
+            });
+          }
+        } catch (e) {
+          // ignore
+        }
       }
 
-      // 3. Offline / Client-Side Cache Fallback
+      // 2. Background Firestore Sync (non-blocking)
       try {
-        const cached = JSON.parse(localStorage.getItem('guruji_sop_repository') || '[]');
-        if (Array.isArray(cached) && cached.length > 0) {
+        const { getAllSopsFromFirestore } = await import('./services/firestorePersistence');
+        const firestoreSops = await getAllSopsFromFirestore();
+        if (!cancelled && firestoreSops && firestoreSops.length > 0) {
           setLessons((prev) => {
-            const incomingIds = new Set(cached.map((s: any) => s.id));
+            const incomingIds = new Set(firestoreSops.map((s) => s.id));
             const existingNonDuplicates = prev.filter((l) => !incomingIds.has(l.id));
-            return [...cached, ...existingNonDuplicates];
+            return [...firestoreSops, ...existingNonDuplicates];
           });
         }
-      } catch (e) {
-        // ignore
+      } catch (fsErr) {
+        // non-blocking
       }
     };
 
     const timer = setTimeout(() => {
       fetchRepositorySops();
-    }, 500);
-    return () => clearTimeout(timer);
+    }, 800);
+    return () => {
+      cancelled = true;
+      clearTimeout(prefetchTimer);
+      clearTimeout(timer);
+    };
   }, []);
+
+  // Load ProcessPassport lazily only when Passport Modal is opened
+  useEffect(() => {
+    if (isPassportModalOpen && (!activePassport || !perceiveObservation)) {
+      import('./utils/blueprintEngine').then(({ buildProcessPassport, perceiveImage }) => {
+        if (!activePassport) setActivePassport(buildProcessPassport('Warehouse Order Picking', 'Picker'));
+        if (!perceiveObservation) setPerceiveObservation(perceiveImage('SOP_Page.png'));
+      });
+    }
+  }, [isPassportModalOpen, activePassport, perceiveObservation]);
+
+  // Load Slide Plan lazily only when Intro Deck is opened
+  useEffect(() => {
+    if (isIntroDeckOpen && selectedLesson) {
+      import('./experiment/Planner').then(({ planSlides }) => {
+        setActiveDeckPlan(planSlides(selectedLesson));
+      });
+    } else {
+      setActiveDeckPlan(null);
+    }
+  }, [isIntroDeckOpen, selectedLesson]);
 
   // Apple Dark Theme Canvas Background Management (black and translucent cards)
   React.useEffect(() => {
@@ -266,7 +296,17 @@ export default function App() {
       setIsExperiencedCheckOpen(false);
       setValidationError(null);
 
-      // 2. SOURCE FIDELITY VALIDATION
+      // 2. SOURCE FIDELITY VALIDATION (Dynamically imported on demand)
+      const [
+        { validateSourceFidelity },
+        { generateDomainNeutralLesson },
+        { perceiveImage },
+      ] = await Promise.all([
+        import('./utils/sourceValidator'),
+        import('./utils/domainNeutralGenerator'),
+        import('./utils/blueprintEngine'),
+      ]);
+
       const validation = validateSourceFidelity(extractedDoc);
 
       if (!validation.isValid) {
@@ -520,7 +560,9 @@ export default function App() {
 
 
   const handleResetData = () => {
-    setLessons(INITIAL_LESSONS);
+    import('./data/lessonsData').then(({ INITIAL_LESSONS }) => {
+      setLessons(INITIAL_LESSONS);
+    });
   };
 
   if (isDesignCheck) {
@@ -627,7 +669,10 @@ export default function App() {
                         className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/15 border border-white/10 text-slate-300 flex items-center justify-center transition-all cursor-pointer shrink-0"
                         aria-label="Close"
                       >
-                        <X size={16} />
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M18 6 6 18" />
+                          <path d="m6 6 12 12" />
+                        </svg>
                       </button>
                     </div>
 
@@ -655,7 +700,9 @@ export default function App() {
                             </span>
                           </div>
                         </div>
-                        <ChevronRight className="w-4 h-4 text-slate-400 group-hover:translate-x-1 transition-transform" />
+                        <svg className="w-4 h-4 text-slate-400 group-hover:translate-x-1 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="m9 18 6-6-6-6" />
+                        </svg>
                       </button>
 
                       {/* Option 2 & 3: SCAN & UPLOAD (ONLY ADMIN HAS ACCESS) */}
@@ -670,7 +717,10 @@ export default function App() {
                             className="bg-white/5 hover:bg-white/10 border border-white/5 hover:border-white/20 rounded-2xl p-4 backdrop-blur-md transition-all flex flex-col justify-between items-start group cursor-pointer text-left h-32"
                           >
                             <div className="w-9 h-9 rounded-xl bg-white/10 border border-white/15 flex items-center justify-center text-white shadow-inner group-hover:scale-105 transition-transform">
-                              <Camera className="w-4 h-4 text-sky-400" />
+                              <svg className="w-4 h-4 text-sky-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z" />
+                                <circle cx="12" cy="13" r="3" />
+                              </svg>
                             </div>
                             <div className="mt-2">
                               <span className="text-[10px] font-semibold text-emerald-400 block uppercase tracking-wider">
@@ -691,7 +741,11 @@ export default function App() {
                             className="bg-white/5 hover:bg-white/10 border border-white/5 hover:border-white/20 rounded-2xl p-4 backdrop-blur-md transition-all flex flex-col justify-between items-start group cursor-pointer text-left h-32"
                           >
                             <div className="w-9 h-9 rounded-xl bg-white/10 border border-white/15 flex items-center justify-center text-white shadow-inner group-hover:scale-105 transition-transform">
-                              <Upload className="w-4 h-4 text-emerald-400" />
+                              <svg className="w-4 h-4 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                <polyline points="17 8 12 3 7 8" />
+                                <line x1="12" x2="12" y1="3" y2="15" />
+                              </svg>
                             </div>
                             <div className="mt-2">
                               <span className="text-[10px] font-semibold text-emerald-400 block uppercase tracking-wider">
@@ -732,7 +786,10 @@ export default function App() {
                         }}
                         className="col-span-2 py-3 px-4 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 text-slate-300 hover:text-white text-xs font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer mt-1"
                       >
-                        <BookOpen className="w-4 h-4 text-slate-300" />
+                        <svg className="w-4 h-4 text-slate-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M12 7v14" />
+                          <path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z" />
+                        </svg>
                         <span>{currentUserRole === 'admin' ? 'Manage SOP Repository →' : 'Browse My Learning →'}</span>
                       </button>
                     </div>
@@ -839,22 +896,26 @@ export default function App() {
               }}
               className="fixed top-4 left-4 z-40 p-2 rounded-full bg-slate-900/50 backdrop-blur-md text-white border border-white/10"
             >
-              <ChevronRight className="rotate-180" size={20} />
+              <svg className="rotate-180" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="m9 18 6-6-6-6" />
+              </svg>
             </button>
           )}
 
           {/* Floating Bottom Navigation Bar (Only on learner specific pages, hide during lessons/home) */}
           {currentUserRole === 'learn' && !selectedLesson && (activeTab === 'library' || activeTab === 'progress' || activeTab === 'profile') && (
-            <BottomNav
-              activeTab={activeTab}
-              onSelectTab={(tab) => {
-                sounds.playTap();
-                setActiveTab(tab);
-                setShowGurujiHome(tab === 'home');
-              }}
-              role={currentUserRole}
-              onOpenRoleSwitcher={() => setIsRoleModalOpen(true)}
-            />
+            <React.Suspense fallback={null}>
+              <BottomNav
+                activeTab={activeTab}
+                onSelectTab={(tab) => {
+                  sounds.playTap();
+                  setActiveTab(tab);
+                  setShowGurujiHome(tab === 'home');
+                }}
+                role={currentUserRole}
+                onOpenRoleSwitcher={() => setIsRoleModalOpen(true)}
+              />
+            </React.Suspense>
           )}
         </>
       )}
@@ -970,10 +1031,10 @@ export default function App() {
         )}
 
         {/* MODE 1: TRAINING DECK (Universal Teach Me Slide Deck) */}
-        {isIntroDeckOpen && selectedLesson && (
+        {isIntroDeckOpen && selectedLesson && activeDeckPlan && (
           <ExperiencePlayer
             lesson={selectedLesson}
-            plan={planSlides(selectedLesson)}
+            plan={activeDeckPlan}
             onClose={() => setIsIntroDeckOpen(false)}
             onComplete={() => {
               setIsIntroDeckOpen(false);
@@ -1020,7 +1081,7 @@ export default function App() {
         )}
 
         {/* P0/P1/P2 Process Passport Trainer Review Modal */}
-        {isPassportModalOpen && (
+        {isPassportModalOpen && activePassport && perceiveObservation && (
           <ProcessPassportModal
             isOpen={isPassportModalOpen}
             passport={activePassport}
@@ -1061,34 +1122,59 @@ export default function App() {
             <BentoArchitectureShowcase onClose={() => setShowBentoShowcase(false)} />
           </div>
         )}
+
+        {/* SOURCE FIDELITY VALIDATION ERROR MODAL */}
+        {validationError !== null && (
+          <ValidationErrorModal
+            isOpen={validationError !== null}
+            filename={validationError?.filename || 'Document'}
+            errorReason={validationError?.reason || 'Content cannot be used.'}
+            onClose={() => setValidationError(null)}
+            onTryAnother={() => {
+              setValidationError(null);
+              setIsUploadOpen(true);
+            }}
+          />
+        )}
       </React.Suspense>
 
-      {/* SOURCE FIDELITY VALIDATION ERROR MODAL */}
-      <ValidationErrorModal
-        isOpen={validationError !== null}
-        filename={validationError?.filename || 'Document'}
-        errorReason={validationError?.reason || 'Content cannot be used.'}
-        onClose={() => setValidationError(null)}
-        onTryAnother={() => {
-          setValidationError(null);
-          setIsUploadOpen(true);
-        }}
-      />
-
-      {/* Gyan AI Work Companion Side-Screen Pull-Out Drawer */}
-      <GyanChatModal
-        isOpen={isGyanModalOpen}
-        onOpen={() => setIsGyanModalOpen(true)}
-        onClose={() => setIsGyanModalOpen(false)}
-        activeLesson={selectedLesson || lessons[0]}
-        onSelectLesson={(lessonId) => handleSelectSop(lessonId)}
-        onCallTrainer={() => {
-          setIsGyanModalOpen(false);
-          setIsTrainerModalOpen(true);
-        }}
-        userRole={currentUserRole}
-        userOrgId="org_default"
-      />
+      {/* Gyan AI Work Companion Side-Screen Pull-Out Drawer (Instant Fallback Tab + Lazy Drawer) */}
+      <React.Suspense
+        fallback={
+          <button
+            onClick={() => {
+              sounds.playTap();
+              setIsGyanModalOpen(true);
+            }}
+            title="Pull out Ask Gyan Drawer"
+            className="fixed right-0 top-1/2 -translate-y-1/2 z-50 flex flex-col items-center justify-center gap-1.5 w-7 sm:w-8 py-4 rounded-l-2xl bg-[#2C3444] hover:bg-[#384357] border-y border-l border-white/30 text-white shadow-[-8px_0_24px_rgba(44,52,68,0.45)] cursor-pointer transition-all active:scale-95 group"
+          >
+            <svg className="w-4 h-4 text-white/90 group-hover:-translate-x-0.5 transition-transform shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="m15 18-6-6 6-6" />
+            </svg>
+            <svg className="w-3.5 h-3.5 text-[#A7C4F2] animate-pulse shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z" />
+            </svg>
+            <span className="[writing-mode:vertical-rl] rotate-180 text-[10px] font-extrabold tracking-widest uppercase text-white select-none">
+              Ask Gyan
+            </span>
+          </button>
+        }
+      >
+        <GyanChatModal
+          isOpen={isGyanModalOpen}
+          onOpen={() => setIsGyanModalOpen(true)}
+          onClose={() => setIsGyanModalOpen(false)}
+          activeLesson={selectedLesson || lessons[0]}
+          onSelectLesson={(lessonId) => handleSelectSop(lessonId)}
+          onCallTrainer={() => {
+            setIsGyanModalOpen(false);
+            setIsTrainerModalOpen(true);
+          }}
+          userRole={currentUserRole}
+          userOrgId="org_default"
+        />
+      </React.Suspense>
 
       {isProcessing && (
         <div className="fixed inset-0 z-[60] bg-[#0E1116]/85 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center animate-in fade-in duration-300">

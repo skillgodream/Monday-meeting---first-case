@@ -1,5 +1,5 @@
 import React from 'react';
-import { Target, Zap, TrendingUp, Star } from 'lucide-react';
+
 const gurujiImg = "/Guruji App Coach Presentation.png";
 
 interface MeetGurujiScreenProps {
@@ -9,7 +9,7 @@ interface MeetGurujiScreenProps {
 export const MeetGurujiScreen: React.FC<MeetGurujiScreenProps> = ({ onContinue }) => {
   return (
     <div 
-      className="relative w-full min-h-[100dvh] sm:min-h-[780px] bg-black text-white overflow-hidden flex flex-col justify-between p-4 sm:p-6 select-none"
+      className="relative w-full min-h-[100dvh] sm:min-h-[780px] bg-black text-white overflow-hidden flex flex-col justify-between p-4 sm:p-6 select-none cursor-pointer"
       onClick={onContinue}
     >
       {/* 1. Apple Spatial Ambient Backdrop */}
@@ -52,29 +52,40 @@ export const MeetGurujiScreen: React.FC<MeetGurujiScreenProps> = ({ onContinue }
           </p>
         </div>
 
-        {/* 4. Small Feature Indicators */}
+        {/* 4. Small Feature Indicators (Zero-dependency inline SVGs for instant startup) */}
         <div className="flex items-center justify-center gap-3 w-full py-1">
-          {/* Indicator 1 */}
+          {/* Indicator 1: Target */}
           <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/[0.08] border border-white/15 backdrop-blur-xl shadow-[inset_0_1px_0.5px_rgba(255,255,255,0.25)]">
-            <Target className="w-3 h-3 text-sky-400" />
+            <svg className="w-3 h-3 text-sky-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10" />
+              <circle cx="12" cy="12" r="6" />
+              <circle cx="12" cy="12" r="2" />
+            </svg>
             <span className="text-[10px] font-semibold text-slate-200">Learn</span>
           </div>
 
-          {/* Indicator 2 */}
+          {/* Indicator 2: Zap */}
           <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/[0.08] border border-white/15 backdrop-blur-xl shadow-[inset_0_1px_0.5px_rgba(255,255,255,0.25)]">
-            <Zap className="w-3 h-3 text-indigo-400" />
+            <svg className="w-3 h-3 text-indigo-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z" />
+            </svg>
             <span className="text-[10px] font-semibold text-slate-200">Guide</span>
           </div>
 
-          {/* Indicator 3 */}
+          {/* Indicator 3: TrendingUp */}
           <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/[0.08] border border-white/15 backdrop-blur-xl shadow-[inset_0_1px_0.5px_rgba(255,255,255,0.25)]">
-            <TrendingUp className="w-3 h-3 text-violet-400" />
+            <svg className="w-3 h-3 text-violet-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="22 7 13.5 15.5 8.5 10.5 2 17" />
+              <polyline points="16 7 22 7 22 13" />
+            </svg>
             <span className="text-[10px] font-semibold text-slate-200">Track</span>
           </div>
 
-          {/* Indicator 4 */}
+          {/* Indicator 4: Star */}
           <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/[0.08] border border-white/15 backdrop-blur-xl shadow-[inset_0_1px_0.5px_rgba(255,255,255,0.25)]">
-            <Star className="w-3 h-3 text-amber-400" />
+            <svg className="w-3 h-3 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+            </svg>
             <span className="text-[10px] font-semibold text-slate-200">Grow</span>
           </div>
         </div>

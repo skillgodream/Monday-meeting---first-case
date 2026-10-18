@@ -85,6 +85,114 @@ app.use((req, res, next) => {
   next();
 });
 
+// Fast in-memory Gzip compression middleware for JS/TS/CSS/HTML/JSON & Vite pre-bundled deps
+const gzipStaticCache = new Map<string, { gzipped: Buffer; mime: string; mtimeMs: number }>();
+
+app.use((req, res, next) => {
+  const acceptEncoding = String(req.headers['accept-encoding'] || '');
+  if (req.method !== 'GET' || !acceptEncoding.includes('gzip')) {
+    return next();
+  }
+
+  const cleanPath = req.path;
+
+  // 1. Fast-path for pre-bundled Vite dependencies (/node_modules/.vite/deps/*) and production /assets/*
+  if (
+    (cleanPath.startsWith('/node_modules/.vite/deps/') || cleanPath.startsWith('/assets/')) &&
+    (cleanPath.endsWith('.js') || cleanPath.endsWith('.css'))
+  ) {
+    const filePath = cleanPath.startsWith('/assets/')
+      ? path.join(process.cwd(), 'dist', cleanPath)
+      : path.join(process.cwd(), cleanPath);
+
+    try {
+      if (fs.existsSync(filePath)) {
+        const stat = fs.statSync(filePath);
+        const cached = gzipStaticCache.get(filePath);
+        if (cached && cached.mtimeMs === stat.mtimeMs) {
+          res.setHeader('Content-Type', cached.mime);
+          res.setHeader('Content-Encoding', 'gzip');
+          res.setHeader('Vary', 'Accept-Encoding');
+          res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+          res.setHeader('Content-Length', String(cached.gzipped.length));
+          return res.status(200).end(cached.gzipped);
+        }
+
+        let raw = fs.readFileSync(filePath);
+        // Strip huge multi-megabyte inline/external sourceMappingURL comments on pre-bundled deps to speed up DevTools & parsing
+        if (cleanPath.startsWith('/node_modules/.vite/deps/') && cleanPath.endsWith('.js')) {
+          const str = raw.toString('utf8').replace(/\/\/# sourceMappingURL=.*$/gm, '');
+          raw = Buffer.from(str, 'utf8');
+        }
+        const gzipped = zlib.gzipSync(raw, { level: 6 });
+        const mime = cleanPath.endsWith('.css')
+          ? 'text/css; charset=utf-8'
+          : 'application/javascript; charset=utf-8';
+        gzipStaticCache.set(filePath, { gzipped, mime, mtimeMs: stat.mtimeMs });
+
+        res.setHeader('Content-Type', mime);
+        res.setHeader('Content-Encoding', 'gzip');
+        res.setHeader('Vary', 'Accept-Encoding');
+        res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+        res.setHeader('Content-Length', String(gzipped.length));
+        return res.status(200).end(gzipped);
+      }
+    } catch {
+      // Fallback to standard handler
+    }
+  }
+
+  // 2. Compress buffered responses (Vite module transforms, index.html, JSON APIs)
+  const origEnd = res.end.bind(res) as any;
+  res.end = function (chunk?: any, encoding?: any, cb?: any): any {
+    if (typeof encoding === 'function') {
+      cb = encoding;
+      encoding = undefined;
+    }
+    if (
+      chunk &&
+      !res.headersSent &&
+      !res.getHeader('Content-Encoding') &&
+      (typeof chunk === 'string' || Buffer.isBuffer(chunk) || chunk instanceof Uint8Array)
+    ) {
+      const contentType = String(res.getHeader('Content-Type') || '');
+      const isCompressible =
+        contentType.includes('javascript') ||
+        contentType.includes('text/css') ||
+        contentType.includes('text/html') ||
+        contentType.includes('application/json') ||
+        contentType.includes('image/svg+xml') ||
+        cleanPath.endsWith('.tsx') ||
+        cleanPath.endsWith('.ts') ||
+        cleanPath.endsWith('.js') ||
+        cleanPath.endsWith('.css');
+
+      if (isCompressible) {
+        const buf = Buffer.isBuffer(chunk)
+          ? chunk
+          : typeof chunk === 'string'
+          ? Buffer.from(chunk, typeof encoding === 'string' ? (encoding as BufferEncoding) : 'utf8')
+          : Buffer.from(chunk);
+
+        if (buf.length > 860) {
+          try {
+            const compressed = zlib.gzipSync(buf, { level: 5 });
+            res.setHeader('Content-Encoding', 'gzip');
+            res.setHeader('Vary', 'Accept-Encoding');
+            res.setHeader('Content-Length', String(compressed.length));
+            return origEnd(compressed, cb);
+          } catch {
+            // Fallback to uncompressed
+          }
+        }
+      }
+    }
+    return origEnd(chunk, encoding, cb);
+  };
+
+  next();
+});
+
 /**
  * Resolves the Gemini API Key dynamically from environment variables.
  * Checks GEMINI_API_KEY, GOOGLE_API_KEY, GEMINI_KEY, VITE_GEMINI_API_KEY, API_KEY.
