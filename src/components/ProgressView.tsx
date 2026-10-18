@@ -24,6 +24,11 @@ import {
 import { Lesson } from '../types';
 import ClayArt from './ClayArt';
 import { sounds } from '../utils/audio';
+import {
+  getContinuousLearningRecommendations,
+  updateLearnerContinuousCourseProgress,
+  ContinuousLearningRecommendation
+} from '../utils/continuousLearningEngine';
 
 interface ProgressViewProps {
   lessons: Lesson[];
@@ -50,8 +55,13 @@ export default function ProgressView({ lessons, onStartSimulation, onOpenLearnin
   // Sub-Category Tab for Module Competency Breakdown ('practice', 'pending', 'not_started')
   const [moduleFilter, setModuleFilter] = useState<'practice' | 'pending' | 'not_started'>('practice');
 
+  // Approved Continuous Learning courses from Manager Report -> Guruji Intelligence -> Manager Approval
+  const [continuousAssignments, setContinuousAssignments] = useState<ContinuousLearningRecommendation[]>(() =>
+    getContinuousLearningRecommendations().filter((r) => r.status === 'approved')
+  );
+
   // Defined Module Categorization
-  const practiceModules: ProgressModuleItem[] = [
+  const basePracticeModules: ProgressModuleItem[] = [
     {
       id: 'housekeeping_sanitization',
       title: 'Housekeeping: Room Sanitization',
@@ -81,7 +91,7 @@ export default function ProgressView({ lessons, onStartSimulation, onOpenLearnin
     },
   ];
 
-  const pendingModules: ProgressModuleItem[] = [
+  const basePendingModules: ProgressModuleItem[] = [
     {
       id: 'packing-basics',
       title: 'Packing Basics & Dunnage Protocol',
@@ -102,7 +112,7 @@ export default function ProgressView({ lessons, onStartSimulation, onOpenLearnin
     },
   ];
 
-  const notStartedModules: ProgressModuleItem[] = [
+  const baseNotStartedModules: ProgressModuleItem[] = [
     {
       id: 'safety-first',
       title: 'Safety First: Warehouse Floor Rules',
@@ -130,6 +140,52 @@ export default function ProgressView({ lessons, onStartSimulation, onOpenLearnin
       statusText: 'Queued',
       statusColor: 'slate',
     },
+  ];
+
+  // Merge approved Guruji Continuous Learning courses into the learner's active module lists
+  const practiceModules: ProgressModuleItem[] = [
+    ...continuousAssignments
+      .filter((r) => r.learnerStatus === 'completed')
+      .map((r) => ({
+        id: r.recommendedCourseId,
+        title: r.recommendedCourseTitle,
+        subtitle: `Continuous Learning · Gap: ${r.skillGap}`,
+        masteryPercentage: 100,
+        artType: 'clipboard' as ArtType,
+        statusText: 'Completed',
+        statusColor: 'emerald',
+      })),
+    ...basePracticeModules,
+  ];
+
+  const pendingModules: ProgressModuleItem[] = [
+    ...continuousAssignments
+      .filter((r) => r.learnerStatus === 'in_progress')
+      .map((r) => ({
+        id: r.recommendedCourseId,
+        title: r.recommendedCourseTitle,
+        subtitle: `Continuous Learning · Gap: ${r.skillGap}`,
+        masteryPercentage: 50,
+        artType: 'clipboard' as ArtType,
+        statusText: 'In Progress',
+        statusColor: 'indigo',
+      })),
+    ...basePendingModules,
+  ];
+
+  const notStartedModules: ProgressModuleItem[] = [
+    ...continuousAssignments
+      .filter((r) => r.learnerStatus === 'not_started')
+      .map((r) => ({
+        id: r.recommendedCourseId,
+        title: r.recommendedCourseTitle,
+        subtitle: `Continuous Learning · Gap: ${r.skillGap}`,
+        masteryPercentage: 0,
+        artType: 'clipboard' as ArtType,
+        statusText: 'Assigned',
+        statusColor: 'amber',
+      })),
+    ...baseNotStartedModules,
   ];
 
   // Standalone Quizzes Data
@@ -185,10 +241,10 @@ export default function ProgressView({ lessons, onStartSimulation, onOpenLearnin
   ];
 
   // Key Frontline Metrics
-  const totalAssigned = 8;
   const completedCount = practiceModules.length;
   const pendingCount = pendingModules.length;
   const notStartedCount = notStartedModules.length;
+  const totalAssigned = completedCount + pendingCount + notStartedCount;
   const delayedCount = 1;
 
   const avgMastery = Math.round(
@@ -304,6 +360,106 @@ export default function ProgressView({ lessons, onStartSimulation, onOpenLearnin
         </div>
         <ChevronRight size={18} className="text-[#8E8E93] shrink-0 ml-2 group-hover:text-white group-hover:translate-x-0.5 transition-all" />
       </div>
+
+      {/* Assigned Continuous Learning Courses */}
+      {continuousAssignments.length > 0 && (
+        <div className="p-4 sm:p-5 bg-[#0A0A0C] rounded-[24px] border border-white/10 space-y-3.5 shadow-xl">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2.5">
+              <div className="w-9 h-9 rounded-full bg-teal-900/50 border border-teal-400/30 text-teal-300 flex items-center justify-center shrink-0">
+                <GraduationCap size={18} />
+              </div>
+              <div>
+                <h3 className="text-sm sm:text-base font-bold text-white tracking-tight">
+                  Assigned Courses
+                </h3>
+                <p className="text-[11px] text-[#8E8E93]">
+                  Refresher and continuous learning courses assigned to your role
+                </p>
+              </div>
+            </div>
+            <span className="px-2.5 py-0.5 rounded-full bg-teal-500/15 border border-teal-500/30 text-[10px] font-bold text-teal-300 shrink-0">
+              {continuousAssignments.length} Assigned
+            </span>
+          </div>
+
+          <div className="space-y-2.5">
+            {continuousAssignments.map((rec) => {
+              const isDone = rec.learnerStatus === 'completed';
+              const isInProg = rec.learnerStatus === 'in_progress';
+
+              return (
+                <div
+                  key={rec.id}
+                  className="p-3.5 rounded-2xl bg-[#121215] border border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                >
+                  <div className="space-y-1 min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-sm font-bold text-white truncate">
+                        {rec.recommendedCourseTitle}
+                      </span>
+                      <span
+                        className={`text-[10px] px-2 py-0.5 rounded-full font-bold border ${
+                          isDone
+                            ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
+                            : isInProg
+                            ? 'bg-indigo-500/15 text-indigo-300 border-indigo-500/30'
+                            : 'bg-amber-500/15 text-amber-300 border-amber-500/30'
+                        }`}
+                      >
+                        {isDone
+                          ? 'Completed · 100%'
+                          : isInProg
+                          ? 'In Progress · 50%'
+                          : 'Assigned · Not Started'}
+                      </span>
+                    </div>
+                    <p className="text-xs text-amber-300/90 font-medium truncate">
+                      Focus Area: {rec.skillGap}
+                    </p>
+                    <p className="text-[11px] text-[#8E8E93] line-clamp-1">
+                      {rec.reason}
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      onClick={() => {
+                        sounds.playTap();
+                        updateLearnerContinuousCourseProgress(rec.id, 'in_progress');
+                        setContinuousAssignments(
+                          getContinuousLearningRecommendations().filter((r) => r.status === 'approved')
+                        );
+                        onStartSimulation(rec.recommendedCourseId);
+                      }}
+                      className="px-3.5 py-1.5 rounded-xl bg-white text-black hover:bg-white/90 text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-all"
+                    >
+                      <Play size={12} className="fill-black" />
+                      <span>{isDone ? 'Review' : isInProg ? 'Continue' : 'Start Learning'}</span>
+                    </button>
+
+                    {!isDone && (
+                      <button
+                        onClick={() => {
+                          sounds.playTap();
+                          updateLearnerContinuousCourseProgress(rec.id, 'completed');
+                          setContinuousAssignments(
+                            getContinuousLearningRecommendations().filter((r) => r.status === 'approved')
+                          );
+                        }}
+                        className="px-3 py-1.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-300 text-xs font-bold flex items-center gap-1 cursor-pointer transition-all"
+                      >
+                        <CheckCircle2 size={13} />
+                        <span>Complete</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* 2. VERTICAL CARDS STACK (Module · Quiz · Others) OR SECTION ACTIVE HEADER */}
       {activeSection === null ? (

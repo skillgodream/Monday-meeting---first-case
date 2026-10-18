@@ -10,7 +10,10 @@ import {
   ChevronRight,
   Award,
   BarChart2,
-  TrendingUp
+  TrendingUp,
+  BrainCircuit,
+  FileText,
+  XCircle
 } from 'lucide-react';
 import { Lesson } from '../types';
 import {
@@ -22,6 +25,12 @@ import {
 import NewLearnerAssignmentModal from './NewLearnerAssignmentModal';
 import SupervisorObservationModal from './SupervisorObservationModal';
 import LearnerEvidenceReportModal from './LearnerEvidenceReportModal';
+import ContinuousLearningReportModal from './ContinuousLearningReportModal';
+import {
+  getContinuousLearningRecommendations,
+  decideContinuousRecommendation,
+  ContinuousLearningRecommendation
+} from '../utils/continuousLearningEngine';
 import {
   getModuleCreationDate,
   getModuleAssignedStatus,
@@ -81,6 +90,14 @@ export default function ManagerDashboardView({
   const [activeObservationLearner, setActiveObservationLearner] = useState<PilotLearner | null>(null);
   const [activeEvidenceLearner, setActiveEvidenceLearner] = useState<PilotLearner | null>(null);
 
+  // Continuous Learning Report Modal state
+  const [isContinuousReportOpen, setIsContinuousReportOpen] = useState(false);
+  const [continuousReportLearner, setContinuousReportLearner] = useState<PilotLearner | null>(null);
+  const [continuousRecs, setContinuousRecs] = useState<ContinuousLearningRecommendation[]>(() =>
+    getContinuousLearningRecommendations()
+  );
+  const [roleModulesRefreshTick, setRoleModulesRefreshTick] = useState(0);
+
   // Selected Learner for the Individual Progress Landing Page (works from My Team or Progress & Scores)
   const [selectedProgressLearner, setSelectedProgressLearner] = useState<PilotLearner | null>(null);
   // Controls whether the 3-card stack ('hub') or a specific phase module list ('new_hire' | 'continuous' | 'upskilling') is shown below the learner's banner
@@ -106,7 +123,7 @@ export default function ManagerDashboardView({
     } catch {
       return INITIAL_ROLE_MODULES;
     }
-  }, [selectedProgressLearner, activeSubTab]);
+  }, [selectedProgressLearner, activeSubTab, roleModulesRefreshTick]);
 
   const scorecard = useMemo(() => {
     try {
@@ -233,6 +250,17 @@ export default function ManagerDashboardView({
           </button>
 
           <div className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                sounds.playTap();
+                setContinuousReportLearner(learner);
+                setIsContinuousReportOpen(true);
+              }}
+              className="px-3 py-1.5 rounded-xl border border-[#E4E4E7] bg-[#F4F4F6] hover:bg-[#E4E4E7] text-xs font-semibold text-[#18181B] flex items-center gap-1.5 cursor-pointer transition-colors"
+            >
+              <FileText size={13} />
+              <span>Submit Report</span>
+            </button>
             <button
               onClick={() => {
                 sounds.playTap();
@@ -589,6 +617,17 @@ export default function ManagerDashboardView({
               <button
                 onClick={() => {
                   sounds.playTap();
+                  setContinuousReportLearner(null);
+                  setIsContinuousReportOpen(true);
+                }}
+                className="px-3.5 py-2 rounded-xl bg-[#F4F4F6] hover:bg-[#E4E4E7] border border-[#E4E4E7] text-[#18181B] font-semibold text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-xs"
+              >
+                <FileText size={14} />
+                <span>Submit Report</span>
+              </button>
+              <button
+                onClick={() => {
+                  sounds.playTap();
                   setIsAssignModalOpen(true);
                 }}
                 className="px-4 py-2 rounded-xl bg-white text-black hover:bg-white/90 font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-sm"
@@ -892,6 +931,93 @@ export default function ManagerDashboardView({
       {/* ========================================================================= */}
       {activeSubTab === 'assign' && (
         <div className="space-y-4">
+          {/* Performance Observation Report Card */}
+          <div className="p-4 rounded-xl border border-white/10 bg-[#0A0A0C] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <h3 className="text-sm font-bold text-white">Performance Report</h3>
+              <p className="text-xs text-white/50 mt-0.5">
+                Speak a 30-second shift debrief or paste shift/WhatsApp notes to match refresher courses for multiple staff at once.
+              </p>
+            </div>
+            <button
+              onClick={() => {
+                sounds.playTap();
+                setContinuousReportLearner(null);
+                setIsContinuousReportOpen(true);
+              }}
+              className="px-3.5 py-2 rounded-xl bg-white text-black font-bold text-xs hover:bg-white/90 cursor-pointer shrink-0 flex items-center gap-1.5 self-start sm:self-center"
+            >
+              <FileText size={14} />
+              <span>Submit Report</span>
+            </button>
+          </div>
+
+          {/* Course Recommendations */}
+          {continuousRecs.length > 0 && (
+            <div className="rounded-2xl border border-white/10 bg-[#0A0A0C] overflow-hidden divide-y divide-white/10">
+              <div className="px-4 py-3 bg-[#121215] flex items-center justify-between">
+                <span className="text-xs font-bold text-white">
+                  Recommended Courses ({continuousRecs.length})
+                </span>
+              </div>
+
+              {continuousRecs.map((rec) => (
+                <div key={rec.id} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="space-y-1 min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-sm font-bold text-white">{rec.learnerName}</span>
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#F4F4F6] text-[#27272A] font-semibold">
+                        {rec.period} · {rec.urgency}
+                      </span>
+                      {rec.status === 'approved' && (
+                        <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-[#E2E8F0] text-[#0F172A] font-semibold">
+                          Assigned · {rec.learnerStatus === 'completed' ? 'Completed' : rec.learnerStatus === 'in_progress' ? 'In Progress' : 'Not Started'}
+                        </span>
+                      )}
+                      {rec.status === 'rejected' && (
+                        <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-white/10 text-white/70 font-semibold">
+                          Rejected
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-slate-200 font-medium">
+                      Skill Gap: <span className="font-semibold text-white">{rec.skillGap}</span> → Course: <span className="font-semibold text-white underline decoration-white/30">{rec.recommendedCourseTitle}</span>
+                    </p>
+                    <p className="text-xs text-[#8E8E93] line-clamp-2">{rec.reason}</p>
+                  </div>
+
+                  {rec.status === 'pending_review' && (
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        onClick={() => {
+                          sounds.playTap();
+                          decideContinuousRecommendation(rec, 'approved');
+                          setContinuousRecs(getContinuousLearningRecommendations());
+                          setRoleModulesRefreshTick((t) => t + 1);
+                        }}
+                        className="px-3 py-1.5 rounded-xl bg-[#F4F4F6] text-[#18181B] font-semibold text-xs flex items-center gap-1 cursor-pointer hover:bg-[#E4E4E7]"
+                      >
+                        <CheckCircle2 size={13} />
+                        <span>Approve</span>
+                      </button>
+                      <button
+                        onClick={() => {
+                          sounds.playTap();
+                          decideContinuousRecommendation(rec, 'rejected');
+                          setContinuousRecs(getContinuousLearningRecommendations());
+                        }}
+                        className="px-3 py-1.5 rounded-xl bg-[#1C1C1E] border border-white/15 text-slate-200 font-semibold text-xs flex items-center gap-1 cursor-pointer hover:bg-white/10"
+                      >
+                        <XCircle size={13} />
+                        <span>Reject</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
           <div className="p-4 rounded-xl border border-white/10 bg-[#0A0A0C] flex items-center justify-between gap-3">
             <div>
               <h3 className="text-sm font-bold text-white">Direct SOP Assignment</h3>
@@ -1070,6 +1196,19 @@ export default function ManagerDashboardView({
         onLearnerAssigned={() => {
           setLearners(getStoredPilotLearners());
           setIsAssignModalOpen(false);
+        }}
+      />
+
+      <ContinuousLearningReportModal
+        isOpen={isContinuousReportOpen}
+        onClose={() => setIsContinuousReportOpen(false)}
+        learners={learners}
+        initialLearner={continuousReportLearner}
+        lessons={lessons}
+        resolveAdminRoleKey={resolveAdminRoleKey}
+        onDecisionComplete={() => {
+          setContinuousRecs(getContinuousLearningRecommendations());
+          setRoleModulesRefreshTick((t) => t + 1);
         }}
       />
 
