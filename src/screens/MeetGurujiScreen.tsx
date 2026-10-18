@@ -1,5 +1,4 @@
 import React from 'react';
-import { motion } from 'framer-motion';
 import { Target, Zap, TrendingUp, Star } from 'lucide-react';
 const gurujiImg = "/Guruji App Coach Presentation.png";
 
@@ -22,21 +21,22 @@ export const MeetGurujiScreen: React.FC<MeetGurujiScreenProps> = ({ onContinue }
       {/* 2. Center Hero Visual: Character directly on Pure Black Canvas (no backcard) */}
       <div className="relative z-10 my-auto flex flex-col items-center justify-center py-4 shrink-0">
         <div className="relative w-80 h-80 sm:w-[400px] sm:h-[400px] flex items-center justify-center">
-          <motion.div
-            animate={{ y: [0, -6, 0] }}
-            transition={{ repeat: Infinity, duration: 4, ease: 'easeInOut' }}
-            className="relative z-10 w-full h-full flex items-center justify-center"
-          >
-            <img
-              src="/Guruji App Coach Presentation.png"
-              alt="Coach Guruji Presentation"
-              referrerPolicy="no-referrer"
-              className="w-full h-full object-contain"
-              onError={(e) => {
-                (e.target as HTMLImageElement).src = gurujiImg;
-              }}
-            />
-          </motion.div>
+          <div className="relative z-10 w-full h-full flex items-center justify-center transition-transform duration-700">
+            <picture className="w-full h-full flex items-center justify-center">
+              <source srcSet="/guruji-coach.webp" type="image/webp" />
+              <img
+                src="/Guruji App Coach Presentation.png"
+                alt="Coach Guruji Presentation"
+                referrerPolicy="no-referrer"
+                fetchPriority="high"
+                decoding="sync"
+                className="w-full h-full object-contain"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = gurujiImg;
+                }}
+              />
+            </picture>
+          </div>
         </div>
       </div>
 
@@ -80,18 +80,16 @@ export const MeetGurujiScreen: React.FC<MeetGurujiScreenProps> = ({ onContinue }
         </div>
 
         {/* 5. Primary CTA Button: Sleek Translucent Apple Glass Tap to explore */}
-        <motion.button
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
+        <button
           onClick={(e) => {
             e.stopPropagation();
             onContinue();
           }}
-          className="w-full h-12 sm:h-13 rounded-full bg-white/[0.12] hover:bg-white/[0.18] active:bg-white/[0.22] backdrop-blur-2xl text-white font-semibold text-sm sm:text-base border border-white/25 shadow-[inset_0_1px_1px_rgba(255,255,255,0.4),0_12px_30px_rgba(0,0,0,0.6)] active:scale-98 transition-all flex items-center justify-center gap-2 cursor-pointer mt-1"
+          className="w-full h-12 sm:h-13 rounded-full bg-white/[0.12] hover:bg-white/[0.18] active:bg-white/[0.22] backdrop-blur-2xl text-white font-semibold text-sm sm:text-base border border-white/25 shadow-[inset_0_1px_1px_rgba(255,255,255,0.4),0_12px_30px_rgba(0,0,0,0.6)] hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer mt-1"
         >
           <span>Tap to explore</span>
           <span className="text-lg">→</span>
-        </motion.button>
+        </button>
       </div>
     </div>
   );

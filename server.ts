@@ -1842,7 +1842,8 @@ const indexHtmlExists = fs.existsSync(path.join(distPath, 'index.html'));
 const isProduction = process.env.NODE_ENV === 'production' || (indexHtmlExists && process.env.NODE_ENV !== 'development');
 
 if (isProduction) {
-  app.use(express.static(distPath));
+  app.use('/assets', express.static(path.join(distPath, 'assets'), { maxAge: '365d', immutable: true }));
+  app.use(express.static(distPath, { maxAge: '1d' }));
   app.get('*', (req, res) => {
     if (req.path.startsWith('/api/')) {
       return res.status(404).json({ success: false, error: 'API route not found' });

@@ -6,9 +6,6 @@
  */
 
 import { analyzeDocumentCharacters } from './characterDiagnostic';
-import { extractTextFromPdf, extractSlidesFromPdf } from '../services/pdfService';
-import { extractTextFromImage } from '../services/ocrService';
-import { extractSlidesFromPptx } from './pptxService';
 import { getApiHeaders } from './apiHelper';
 import { SlidePage } from '../types';
 
@@ -173,10 +170,11 @@ export async function extractDocumentContent(file: File | { name: string; conten
     const isPdf = lowerName.endsWith('.pdf') || mimeType.includes('pdf');
     const isImage = mimeType.includes('image') || lowerName.endsWith('.png') || lowerName.endsWith('.jpg') || lowerName.endsWith('.jpeg') || lowerName.endsWith('.webp');
 
-    // 0. PPTX / POWERPOINT EXTRACTION (JSZip & XML parsing)
+    // 0. PPTX / POWERPOINT EXTRACTION (JSZip & XML parsing — dynamically loaded on demand)
     if (isPptx) {
       try {
         console.log(`[DocumentExtractor] Running PPTX slide parsing for '${filename}'...`);
+        const { extractSlidesFromPptx } = await import('./pptxService');
         const pptxRes = await extractSlidesFromPptx(file);
         if (pptxRes.slides && pptxRes.slides.length > 0) {
           extractedSlides = pptxRes.slides;
@@ -188,10 +186,11 @@ export async function extractDocumentContent(file: File | { name: string; conten
       }
     }
 
-    // 1. FAST CLIENT-SIDE PDF EXTRACTION (pdfjs-dist in browser — instant & resilient)
+    // 1. FAST CLIENT-SIDE PDF EXTRACTION (pdfjs-dist dynamically loaded on demand)
     if (!rawText && isPdf) {
       try {
         console.log(`[DocumentExtractor] Running browser-side PDF text and slide extraction for '${filename}'...`);
+        const { extractSlidesFromPdf } = await import('../services/pdfService');
         const pdfResult = await extractSlidesFromPdf(file);
         if (pdfResult.text && pdfResult.text.trim().length > 10) {
           rawText = pdfResult.text;
@@ -205,10 +204,11 @@ export async function extractDocumentContent(file: File | { name: string; conten
       }
     }
 
-    // 2. CLIENT-SIDE OCR FOR IMAGES (tesseract.js in browser with timeout race)
+    // 2. CLIENT-SIDE OCR FOR IMAGES (tesseract.js dynamically loaded on demand)
     if (!rawText && isImage) {
       try {
         console.log(`[DocumentExtractor] Running browser-side OCR for image '${filename}'...`);
+        const { extractTextFromImage } = await import('../services/ocrService');
         const fileUrl = URL.createObjectURL(file);
         const ocrText = await extractTextFromImage(fileUrl, 15000);
         URL.revokeObjectURL(fileUrl);

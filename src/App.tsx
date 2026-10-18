@@ -6,53 +6,63 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { Camera, Upload, BookOpen, Sparkles, ChevronRight, X, ShieldCheck, Users, GraduationCap } from 'lucide-react';
 import BottomNav from './components/BottomNav';
-import ScanModal from './components/ScanModal';
-import UploadModal from './components/UploadModal';
-import AiUnderstandModal from './components/AiUnderstandModal';
-import WelcomeJourneyModal from './components/WelcomeJourneyModal';
-import { LearningJourneyModal } from './components/LearningJourneyModal';
-import ExperiencedCheckModal from './components/ExperiencedCheckModal';
-import AskTrainerModal from './components/AskTrainerModal';
 import GyanChatModal from './components/GyanChatModal';
-import MicroLessonSheet from './components/MicroLessonSheet';
-import LessonOverview from './components/LessonOverview';
-import SimulatorScreen from './components/SimulatorScreen';
-import LibraryView from './components/LibraryView';
-import ProgressView from './components/ProgressView';
-import ProfileView from './components/ProfileView';
-import PilotDashboardView from './components/PilotDashboardView';
-import BentoArchitectureShowcase from './components/BentoArchitectureShowcase';
 import ValidationErrorModal from './components/ValidationErrorModal';
 import { MeetGurujiScreen } from './screens/MeetGurujiScreen';
-import { HomeScreen } from './screens/HomeScreen';
-import { DesignCheckScreen } from './screens/DesignCheckScreen';
-import { ContentCardScreen } from './screens/ContentCardScreen';
 
 import { INITIAL_LESSONS } from './data/lessonsData';
-import ProcessPassportModal from './components/ProcessPassportModal';
 import { buildProcessPassport, perceiveImage } from './utils/blueprintEngine';
 import { ProcessPassport, PerceiveObservation, TabType, Lesson, ExperienceLevel } from './types';
 import { sounds } from './utils/audio';
-import { ExperiencePlayer } from './experiment/ExperiencePlayer';
 import { planSlides } from './experiment/Planner';
-import { ExtractedDocument } from './utils/documentExtractor';
+import type { ExtractedDocument } from './utils/documentExtractor';
 import { validateSourceFidelity } from './utils/sourceValidator';
 import { generateDomainNeutralLesson } from './utils/domainNeutralGenerator';
 import { getApiHeaders } from './utils/apiHelper';
-import { ShowMeVideoModal } from './components/ShowMeVideoModal';
-import { SopGenerationModal } from './components/SopGenerationModal';
-import { AnalyzingModal } from './components/AnalyzingModal';
 import RoleNavigationModal, { UserRole } from './components/RoleNavigationModal';
-import ManagerDashboardView from './components/ManagerDashboardView';
-import AdminDashboardView from './components/AdminDashboardView';
-import {
-  saveSopToFirestore,
-  getAllSopsFromFirestore,
-  deleteSopFromFirestore,
-  logAuditEvent,
-  saveAttemptToFirestore,
-  saveProgressToFirestore
-} from './services/firestorePersistence';
+
+// Code-split heavy modals & secondary views so initial bundle loads instantaneously
+const HomeScreen = React.lazy(() =>
+  import('./screens/HomeScreen').then((m) => ({ default: m.HomeScreen }))
+);
+const AiUnderstandModal = React.lazy(() => import('./components/AiUnderstandModal'));
+const WelcomeJourneyModal = React.lazy(() => import('./components/WelcomeJourneyModal'));
+const LearningJourneyModal = React.lazy(() =>
+  import('./components/LearningJourneyModal').then((m) => ({ default: m.LearningJourneyModal }))
+);
+const ExperiencedCheckModal = React.lazy(() => import('./components/ExperiencedCheckModal'));
+const AskTrainerModal = React.lazy(() => import('./components/AskTrainerModal'));
+const MicroLessonSheet = React.lazy(() => import('./components/MicroLessonSheet'));
+const LessonOverview = React.lazy(() => import('./components/LessonOverview'));
+const LibraryView = React.lazy(() => import('./components/LibraryView'));
+const ProgressView = React.lazy(() => import('./components/ProgressView'));
+const ProfileView = React.lazy(() => import('./components/ProfileView'));
+const SopGenerationModal = React.lazy(() =>
+  import('./components/SopGenerationModal').then((m) => ({ default: m.SopGenerationModal }))
+);
+const AnalyzingModal = React.lazy(() =>
+  import('./components/AnalyzingModal').then((m) => ({ default: m.AnalyzingModal }))
+);
+const ScanModal = React.lazy(() => import('./components/ScanModal'));
+const UploadModal = React.lazy(() => import('./components/UploadModal'));
+const SimulatorScreen = React.lazy(() => import('./components/SimulatorScreen'));
+const PilotDashboardView = React.lazy(() => import('./components/PilotDashboardView'));
+const BentoArchitectureShowcase = React.lazy(() => import('./components/BentoArchitectureShowcase'));
+const ProcessPassportModal = React.lazy(() => import('./components/ProcessPassportModal'));
+const ManagerDashboardView = React.lazy(() => import('./components/ManagerDashboardView'));
+const AdminDashboardView = React.lazy(() => import('./components/AdminDashboardView'));
+const ExperiencePlayer = React.lazy(() =>
+  import('./experiment/ExperiencePlayer').then((m) => ({ default: m.ExperiencePlayer }))
+);
+const ShowMeVideoModal = React.lazy(() =>
+  import('./components/ShowMeVideoModal').then((m) => ({ default: m.ShowMeVideoModal }))
+);
+const DesignCheckScreen = React.lazy(() =>
+  import('./screens/DesignCheckScreen').then((m) => ({ default: m.DesignCheckScreen }))
+);
+const ContentCardScreen = React.lazy(() =>
+  import('./screens/ContentCardScreen').then((m) => ({ default: m.ContentCardScreen }))
+);
 
 export default function App() {
   const [isDesignCheck, setIsDesignCheck] = useState<boolean>(
@@ -141,6 +151,7 @@ export default function App() {
   const saveToPersistentRepository = useCallback(async (lesson: Lesson) => {
     // 1. Authoritative Firestore Database Persistence
     try {
+      const { saveSopToFirestore } = await import('./services/firestorePersistence');
       await saveSopToFirestore(lesson);
       console.log(`[Firestore Sync] Persisted module '${lesson.title}' to Firestore database.`);
     } catch (fsErr) {
@@ -174,6 +185,7 @@ export default function App() {
     const fetchRepositorySops = async () => {
       // 1. Fetch from Firestore Database (Authoritative Store)
       try {
+        const { getAllSopsFromFirestore } = await import('./services/firestorePersistence');
         const firestoreSops = await getAllSopsFromFirestore();
         if (firestoreSops && firestoreSops.length > 0) {
           setLessons((prev) => {
@@ -219,7 +231,10 @@ export default function App() {
       }
     };
 
-    fetchRepositorySops();
+    const timer = setTimeout(() => {
+      fetchRepositorySops();
+    }, 500);
+    return () => clearTimeout(timer);
   }, []);
 
   // Apple Dark Theme Canvas Background Management (black and translucent cards)
@@ -479,6 +494,7 @@ export default function App() {
     // Save assessment attempt & progress in Firestore
     const attemptId = `attempt_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
     const passed = score >= 80;
+    const { saveAttemptToFirestore, saveProgressToFirestore } = await import('./services/firestorePersistence');
     await saveAttemptToFirestore({
       id: attemptId,
       userId: 'user_active',
@@ -508,11 +524,19 @@ export default function App() {
   };
 
   if (isDesignCheck) {
-    return <DesignCheckScreen onBack={() => { window.location.hash = ''; setIsDesignCheck(false); }} />;
+    return (
+      <React.Suspense fallback={null}>
+        <DesignCheckScreen onBack={() => { window.location.hash = ''; setIsDesignCheck(false); }} />
+      </React.Suspense>
+    );
   }
 
   if (isContentCard) {
-    return <ContentCardScreen lesson={selectedLesson || undefined} onBack={() => { window.location.hash = ''; setIsContentCard(false); }} />;
+    return (
+      <React.Suspense fallback={null}>
+        <ContentCardScreen lesson={selectedLesson || undefined} onBack={() => { window.location.hash = ''; setIsContentCard(false); }} />
+      </React.Suspense>
+    );
   }
 
   return (
@@ -538,46 +562,50 @@ export default function App() {
                 }}
               />
             </div>
-          ) : currentUserRole === 'admin' ? (
-            <AdminDashboardView
-              lessons={lessons}
-              onScanClick={() => setIsScanOpen(true)}
-              onUploadClick={() => setIsUploadOpen(true)}
-              onSelectSop={handleSelectSop}
-              onDeleteSop={(id) => {
-                fetch(`/api/repository/sops/${id}`, { method: 'DELETE' });
-                setLessons((prev) => prev.filter((l) => l.id !== id));
-              }}
-              onOpenRoleSwitcher={() => setIsRoleModalOpen(true)}
-              onBackToHome={() => {
-                sounds.playTap();
-                setIsRoleModalOpen(true);
-              }}
-            />
-          ) : currentUserRole === 'manager' ? (
-            <ManagerDashboardView
-              lessons={lessons}
-              onSelectSop={handleSelectSop}
-              onOpenRoleSwitcher={() => setIsRoleModalOpen(true)}
-              onBackToHome={() => {
-                sounds.playTap();
-                setIsRoleModalOpen(true);
-              }}
-            />
           ) : (
-            <div className="max-w-lg mx-auto w-full">
-              <HomeScreen
-                lessons={lessons}
-                onScanClick={() => setIsScanOpen(true)}
-                onUploadClick={() => setIsUploadOpen(true)}
-                onSelectSop={handleSelectSop}
-                onExploreLibrary={() => setActiveTab('library')}
-                onOpenPassport={() => setIsPassportModalOpen(true)}
-                onShowGurujiWelcome={() => setIsRoleModalOpen(true)}
-                onOpenLearningJourney={() => setIsLearningJourneyOpen(true)}
-                userRole={currentUserRole}
-              />
-            </div>
+            <React.Suspense fallback={null}>
+              {currentUserRole === 'admin' ? (
+                <AdminDashboardView
+                  lessons={lessons}
+                  onScanClick={() => setIsScanOpen(true)}
+                  onUploadClick={() => setIsUploadOpen(true)}
+                  onSelectSop={handleSelectSop}
+                  onDeleteSop={(id) => {
+                    fetch(`/api/repository/sops/${id}`, { method: 'DELETE' });
+                    setLessons((prev) => prev.filter((l) => l.id !== id));
+                  }}
+                  onOpenRoleSwitcher={() => setIsRoleModalOpen(true)}
+                  onBackToHome={() => {
+                    sounds.playTap();
+                    setIsRoleModalOpen(true);
+                  }}
+                />
+              ) : currentUserRole === 'manager' ? (
+                <ManagerDashboardView
+                  lessons={lessons}
+                  onSelectSop={handleSelectSop}
+                  onOpenRoleSwitcher={() => setIsRoleModalOpen(true)}
+                  onBackToHome={() => {
+                    sounds.playTap();
+                    setIsRoleModalOpen(true);
+                  }}
+                />
+              ) : (
+                <div className="max-w-lg mx-auto w-full">
+                  <HomeScreen
+                    lessons={lessons}
+                    onScanClick={() => setIsScanOpen(true)}
+                    onUploadClick={() => setIsUploadOpen(true)}
+                    onSelectSop={handleSelectSop}
+                    onExploreLibrary={() => setActiveTab('library')}
+                    onOpenPassport={() => setIsPassportModalOpen(true)}
+                    onShowGurujiWelcome={() => setIsRoleModalOpen(true)}
+                    onOpenLearningJourney={() => setIsLearningJourneyOpen(true)}
+                    userRole={currentUserRole}
+                  />
+                </div>
+              )}
+            </React.Suspense>
           )}
 
               {/* Modern Ultra-Sleek Glass SOP Selection Drawer (Role-Permission Aware) */}
@@ -715,82 +743,90 @@ export default function App() {
           )}
 
           {activeTab === 'library' && (
-            <main className="flex-1 flex flex-col max-w-lg mx-auto w-full animate-in fade-in duration-200">
-              <LibraryView
-                lessons={lessons}
-                onSelectLesson={(lesson) => {
-                  handleSelectSop(lesson.id, lesson.title);
-                }}
-              />
-            </main>
+            <React.Suspense fallback={null}>
+              <main className="flex-1 flex flex-col max-w-lg mx-auto w-full animate-in fade-in duration-200">
+                <LibraryView
+                  lessons={lessons}
+                  onSelectLesson={(lesson) => {
+                    handleSelectSop(lesson.id, lesson.title);
+                  }}
+                />
+              </main>
+            </React.Suspense>
           )}
 
           {activeTab === 'progress' && (
-            <main className="flex-1 flex flex-col max-w-lg mx-auto w-full animate-in fade-in duration-200">
-              <ProgressView
-                lessons={lessons}
-                onStartSimulation={(lessonId) => {
-                  const found = lessons.find((l) => l.id === lessonId) || lessons[0];
-                  handleSelectSop(found.id, found.title);
-                }}
-                onOpenLearningJourney={() => setIsLearningJourneyOpen(true)}
-              />
-            </main>
+            <React.Suspense fallback={null}>
+              <main className="flex-1 flex flex-col max-w-lg mx-auto w-full animate-in fade-in duration-200">
+                <ProgressView
+                  lessons={lessons}
+                  onStartSimulation={(lessonId) => {
+                    const found = lessons.find((l) => l.id === lessonId) || lessons[0];
+                    handleSelectSop(found.id, found.title);
+                  }}
+                  onOpenLearningJourney={() => setIsLearningJourneyOpen(true)}
+                />
+              </main>
+            </React.Suspense>
           )}
 
           {activeTab === 'pilot' && (
-            <main className="flex-1 flex flex-col max-w-5xl mx-auto w-full animate-in fade-in duration-200">
-              {currentUserRole === 'manager' ? (
-                <ManagerDashboardView
-                  lessons={lessons}
-                  onSelectSop={handleSelectSop}
-                  onOpenRoleSwitcher={() => setIsRoleModalOpen(true)}
-                  onBackToHome={() => {
-                    sounds.playTap();
-                    setCurrentUserRole('learn');
-                    localStorage.setItem('guruji_user_role', 'learn');
-                    setActiveTab('home');
-                  }}
-                />
-              ) : currentUserRole === 'admin' ? (
-                <AdminDashboardView
-                  lessons={lessons}
-                  onScanClick={() => setIsScanOpen(true)}
-                  onUploadClick={() => setIsUploadOpen(true)}
-                  onSelectSop={handleSelectSop}
-                  onDeleteSop={(id) => {
-                    fetch(`/api/repository/sops/${id}`, { method: 'DELETE' });
-                    setLessons((prev) => prev.filter((l) => l.id !== id));
-                  }}
-                  onOpenRoleSwitcher={() => setIsRoleModalOpen(true)}
-                  onBackToHome={() => {
-                    sounds.playTap();
-                    setCurrentUserRole('learn');
-                    localStorage.setItem('guruji_user_role', 'learn');
-                    setActiveTab('home');
-                  }}
-                />
-              ) : (
-                <PilotDashboardView
-                  onBackToHome={() => setActiveTab('home')}
-                  onSelectLearnerSop={(learner) => {
-                    handleSelectSop(learner.assignedSopId, learner.assignedSopTitle);
-                  }}
-                />
-              )}
-            </main>
+            <React.Suspense fallback={null}>
+              <main className="flex-1 flex flex-col max-w-5xl mx-auto w-full animate-in fade-in duration-200">
+                {currentUserRole === 'manager' ? (
+                  <ManagerDashboardView
+                    lessons={lessons}
+                    onSelectSop={handleSelectSop}
+                    onOpenRoleSwitcher={() => setIsRoleModalOpen(true)}
+                    onBackToHome={() => {
+                      sounds.playTap();
+                      setCurrentUserRole('learn');
+                      localStorage.setItem('guruji_user_role', 'learn');
+                      setActiveTab('home');
+                    }}
+                  />
+                ) : currentUserRole === 'admin' ? (
+                  <AdminDashboardView
+                    lessons={lessons}
+                    onScanClick={() => setIsScanOpen(true)}
+                    onUploadClick={() => setIsUploadOpen(true)}
+                    onSelectSop={handleSelectSop}
+                    onDeleteSop={(id) => {
+                      fetch(`/api/repository/sops/${id}`, { method: 'DELETE' });
+                      setLessons((prev) => prev.filter((l) => l.id !== id));
+                    }}
+                    onOpenRoleSwitcher={() => setIsRoleModalOpen(true)}
+                    onBackToHome={() => {
+                      sounds.playTap();
+                      setCurrentUserRole('learn');
+                      localStorage.setItem('guruji_user_role', 'learn');
+                      setActiveTab('home');
+                    }}
+                  />
+                ) : (
+                  <PilotDashboardView
+                    onBackToHome={() => setActiveTab('home')}
+                    onSelectLearnerSop={(learner) => {
+                      handleSelectSop(learner.assignedSopId, learner.assignedSopTitle);
+                    }}
+                  />
+                )}
+              </main>
+            </React.Suspense>
           )}
 
           {activeTab === 'profile' && (
-            <main className="flex-1 flex flex-col max-w-lg mx-auto w-full animate-in fade-in duration-200">
-              <ProfileView
-                onResetData={handleResetData}
-                onOpenBentoShowcase={() => setShowBentoShowcase(true)}
-                onOpenPassport={() => setIsPassportModalOpen(true)}
-                onOpenRoleSwitcher={() => setIsRoleModalOpen(true)}
-                role={currentUserRole}
-              />
-            </main>
+            <React.Suspense fallback={null}>
+              <main className="flex-1 flex flex-col max-w-lg mx-auto w-full animate-in fade-in duration-200">
+                <ProfileView
+                  onResetData={handleResetData}
+                  onOpenBentoShowcase={() => setShowBentoShowcase(true)}
+                  onOpenPassport={() => setIsPassportModalOpen(true)}
+                  onOpenRoleSwitcher={() => setIsRoleModalOpen(true)}
+                  role={currentUserRole}
+                />
+              </main>
+            </React.Suspense>
           )}
 
           {/* Back button for navigation on top left */}
@@ -823,71 +859,209 @@ export default function App() {
         </>
       )}
 
-      {/* Ensure LessonOverview and following stages are visible */}
-      {selectedLesson && !activeSimulator && !isIntroDeckOpen && !isExperiencedCheckOpen && !isVideoDemoOpen && (
-        <LessonOverview
-          lesson={selectedLesson}
-          onBack={() => {
-            setSelectedLesson(null);
-            setWelcomeLesson(null);
-          }}
-          onOpenIntroDeck={() => setIsIntroDeckOpen(true)}
-          onStartSimulation={(phase) => handleStartSimulation(phase)}
-          onOpenVideoDemo={() => setIsVideoDemoOpen(true)}
-          onAskTrainer={() => setIsTrainerModalOpen(true)}
-        />
-      )}
+      {/* Localized Suspense Boundary for Conditionally Mounted Modals & Active Lesson Views */}
+      <React.Suspense fallback={null}>
+        {/* Ensure LessonOverview and following stages are visible */}
+        {selectedLesson && !activeSimulator && !isIntroDeckOpen && !isExperiencedCheckOpen && !isVideoDemoOpen && (
+          <LessonOverview
+            lesson={selectedLesson}
+            onBack={() => {
+              setSelectedLesson(null);
+              setWelcomeLesson(null);
+            }}
+            onOpenIntroDeck={() => setIsIntroDeckOpen(true)}
+            onStartSimulation={(phase) => handleStartSimulation(phase)}
+            onOpenVideoDemo={() => setIsVideoDemoOpen(true)}
+            onAskTrainer={() => setIsTrainerModalOpen(true)}
+          />
+        )}
 
-      {/* 1. STARTING OPTION: Scan the SOP Modal */}
-      <ScanModal
-        isOpen={isScanOpen}
-        onClose={() => setIsScanOpen(false)}
-        onScanSuccess={(extractedDoc) => {
-          setIsScanOpen(false);
-          setIsAnalyzing(true);
-          setTimeout(() => {
-            setIsAnalyzing(false);
-            setExtractedDocForModal(extractedDoc);
-          }, 2000);
-        }}
-      />
+        {/* 1. STARTING OPTION: Scan the SOP Modal */}
+        {isScanOpen && (
+          <ScanModal
+            isOpen={isScanOpen}
+            onClose={() => setIsScanOpen(false)}
+            onScanSuccess={(extractedDoc) => {
+              setIsScanOpen(false);
+              setIsAnalyzing(true);
+              setTimeout(() => {
+                setIsAnalyzing(false);
+                setExtractedDocForModal(extractedDoc);
+              }, 2000);
+            }}
+          />
+        )}
 
-      {/* 2. UPLOAD FILE / PASTE SOP TEXT MODAL */}
-      <UploadModal
-        isOpen={isUploadOpen}
-        onClose={() => setIsUploadOpen(false)}
-        onUploadSuccess={(extractedDoc) => {
-          setIsUploadOpen(false);
-          setIsAnalyzing(true);
-          setTimeout(() => {
-            setIsAnalyzing(false);
-            setExtractedDocForModal(extractedDoc);
-          }, 2000);
-        }}
-      />
+        {/* 2. UPLOAD FILE / PASTE SOP TEXT MODAL */}
+        {isUploadOpen && (
+          <UploadModal
+            isOpen={isUploadOpen}
+            onClose={() => setIsUploadOpen(false)}
+            onUploadSuccess={(extractedDoc) => {
+              setIsUploadOpen(false);
+              setIsAnalyzing(true);
+              setTimeout(() => {
+                setIsAnalyzing(false);
+                setExtractedDocForModal(extractedDoc);
+              }, 2000);
+            }}
+          />
+        )}
 
-      {/* Analyzing Modal */}
-      <AnalyzingModal 
-        isOpen={isAnalyzing} 
-        onCancel={() => setIsAnalyzing(false)} 
-      />
+        {/* Analyzing Modal */}
+        {isAnalyzing && (
+          <AnalyzingModal 
+            isOpen={isAnalyzing} 
+            onCancel={() => setIsAnalyzing(false)} 
+          />
+        )}
 
-      {/* 3. SOP GENERATION MODE SELECTION (AUTO-CREATE vs INSTRUCT MODE) */}
-      <SopGenerationModal
-        isOpen={extractedDocForModal !== null}
-        onClose={() => setExtractedDocForModal(null)}
-        extractedDoc={extractedDocForModal}
-        onDeckCreated={(lesson) => {
-          setExtractedDocForModal(null);
-          setSelectedLesson(lesson);
-          setLessons((prev) => [lesson, ...prev.filter((l) => l.id !== lesson.id)]);
-          saveToPersistentRepository(lesson);
-        }}
-        onUploadNew={() => {
-          setExtractedDocForModal(null);
-          setIsUploadOpen(true);
-        }}
-      />
+        {/* 3. SOP GENERATION MODE SELECTION (AUTO-CREATE vs INSTRUCT MODE) */}
+        {extractedDocForModal !== null && (
+          <SopGenerationModal
+            isOpen={extractedDocForModal !== null}
+            onClose={() => setExtractedDocForModal(null)}
+            extractedDoc={extractedDocForModal}
+            onDeckCreated={(lesson) => {
+              setExtractedDocForModal(null);
+              setSelectedLesson(lesson);
+              setLessons((prev) => [lesson, ...prev.filter((l) => l.id !== lesson.id)]);
+              saveToPersistentRepository(lesson);
+            }}
+            onUploadNew={() => {
+              setExtractedDocForModal(null);
+              setIsUploadOpen(true);
+            }}
+          />
+        )}
+
+        {/* TRANSITION: AI Observes -> Understands SOP -> Ready */}
+        {analyzingSop !== null && (
+          <AiUnderstandModal
+            isOpen={analyzingSop !== null}
+            sopTitle={analyzingSop?.title || ''}
+            confirmationText={analyzingSop?.confirmationText}
+            filename={analyzingSop?.filename}
+            onComplete={handleAiUnderstandComplete}
+          />
+        )}
+
+        {/* STEP 1: WELCOME ONBOARDING JOURNEY: New / Some / Experienced */}
+        {welcomeLesson && (
+          <WelcomeJourneyModal
+            lesson={welcomeLesson}
+            isOpen={welcomeLesson !== null}
+            onClose={() => setWelcomeLesson(null)}
+            onSelectLevel={handleSelectExperienceLevel}
+            onAskTrainer={() => setIsTrainerModalOpen(true)}
+          />
+        )}
+
+        {/* STEP 2 (Experienced branch): 4-Question Check */}
+        {isExperiencedCheckOpen && (
+          <ExperiencedCheckModal
+            isOpen={isExperiencedCheckOpen}
+            lesson={welcomeLesson || selectedLesson}
+            onClose={() => setIsExperiencedCheckOpen(false)}
+            onPass={handleExperiencedCheckPass}
+            onFail={handleExperiencedCheckFail}
+            onAskTrainer={() => setIsTrainerModalOpen(true)}
+          />
+        )}
+
+        {/* MODE 1: TRAINING DECK (Universal Teach Me Slide Deck) */}
+        {isIntroDeckOpen && selectedLesson && (
+          <ExperiencePlayer
+            lesson={selectedLesson}
+            plan={planSlides(selectedLesson)}
+            onClose={() => setIsIntroDeckOpen(false)}
+            onComplete={() => {
+              setIsIntroDeckOpen(false);
+              handleStartSimulation(0);
+            }}
+          />
+        )}
+
+        {/* MODE 2: SHOW ME (Google Veo On-Demand AI Video Demonstration) */}
+        {isVideoDemoOpen && selectedLesson && (
+          <ShowMeVideoModal
+            isOpen={isVideoDemoOpen}
+            lesson={selectedLesson}
+            onClose={() => setIsVideoDemoOpen(false)}
+            onContinueToGuideMe={() => {
+              setIsVideoDemoOpen(false);
+              handleStartSimulation(1);
+            }}
+          />
+        )}
+
+        {/* MODES 2, 3, 4: SHOW ME (0), GUIDE ME (1), TEST ME (2) */}
+        {activeSimulator && (
+          <SimulatorScreen
+            initialPhase={simulatorPhase}
+            lesson={activeSimulator}
+            sourceMeta={activeSimulator.sourceMeta}
+            onClose={() => setActiveSimulator(null)}
+            onFinish={handleSimulationFinish}
+            onOpenBasics={() => {
+              setIsIntroDeckOpen(true);
+            }}
+            onAskTrainer={() => setIsTrainerModalOpen(true)}
+          />
+        )}
+
+        {/* OMNIPRESENT: Ask My Trainer Modal */}
+        {isTrainerModalOpen && (
+          <AskTrainerModal
+            isOpen={isTrainerModalOpen}
+            onClose={() => setIsTrainerModalOpen(false)}
+            currentStepTitle={currentContextTitle}
+          />
+        )}
+
+        {/* P0/P1/P2 Process Passport Trainer Review Modal */}
+        {isPassportModalOpen && (
+          <ProcessPassportModal
+            isOpen={isPassportModalOpen}
+            passport={activePassport}
+            perceiveResult={perceiveObservation}
+            onClose={() => setIsPassportModalOpen(false)}
+            onApprovePassport={(approved) => {
+              setActivePassport(approved);
+            }}
+          />
+        )}
+
+        {/* Employee Learning Journey Modal */}
+        {isLearningJourneyOpen && (
+          <LearningJourneyModal
+            isOpen={isLearningJourneyOpen}
+            onClose={() => setIsLearningJourneyOpen(false)}
+            onStartSimulation={(lessonId) => {
+              handleSelectSop(lessonId);
+            }}
+          />
+        )}
+
+        {/* OMNIPRESENT: On The Floor Quick Micro-Lessons */}
+        {isMicroLessonOpen && (
+          <MicroLessonSheet
+            isOpen={isMicroLessonOpen}
+            onClose={() => setIsMicroLessonOpen(false)}
+            onOpenBasics={() => {
+              setIsIntroDeckOpen(true);
+            }}
+            onAskTrainer={() => setIsTrainerModalOpen(true)}
+          />
+        )}
+
+        {/* Fullscreen Bento Architecture Showcase */}
+        {showBentoShowcase && (
+          <div className="fixed inset-0 z-50 bg-[#F7F7F5] dark:bg-[#0A0D12] overflow-y-auto animate-in fade-in duration-200">
+            <BentoArchitectureShowcase onClose={() => setShowBentoShowcase(false)} />
+          </div>
+        )}
+      </React.Suspense>
 
       {/* SOURCE FIDELITY VALIDATION ERROR MODAL */}
       <ValidationErrorModal
@@ -899,88 +1073,6 @@ export default function App() {
           setValidationError(null);
           setIsUploadOpen(true);
         }}
-      />
-
-      {/* TRANSITION: AI Observes -> Understands SOP -> Ready */}
-      <AiUnderstandModal
-        isOpen={analyzingSop !== null}
-        sopTitle={analyzingSop?.title || ''}
-        confirmationText={analyzingSop?.confirmationText}
-        filename={analyzingSop?.filename}
-        onComplete={handleAiUnderstandComplete}
-      />
-
-      {/* STEP 1: WELCOME ONBOARDING JOURNEY: New / Some / Experienced */}
-      {welcomeLesson && (
-        <WelcomeJourneyModal
-          lesson={welcomeLesson}
-          isOpen={welcomeLesson !== null}
-          onClose={() => setWelcomeLesson(null)}
-          onSelectLevel={handleSelectExperienceLevel}
-          onAskTrainer={() => setIsTrainerModalOpen(true)}
-        />
-      )}
-
-      {/* STEP 2 (Experienced branch): 4-Question Check */}
-      <ExperiencedCheckModal
-        isOpen={isExperiencedCheckOpen}
-        lesson={welcomeLesson || selectedLesson}
-        onClose={() => setIsExperiencedCheckOpen(false)}
-        onPass={handleExperiencedCheckPass}
-        onFail={handleExperiencedCheckFail}
-        onAskTrainer={() => setIsTrainerModalOpen(true)}
-      />
-
-      {/* STEP 3: 4 LEARNING MODES SCREEN (Know It, Show Me, Guide Me, Test Me) 
-          Handled globally via selectedLesson state */}
-      
-      {/* MODE 1: TRAINING DECK (Universal Teach Me Slide Deck) */}
-      {isIntroDeckOpen && selectedLesson && (
-        <ExperiencePlayer
-          lesson={selectedLesson}
-          plan={planSlides(selectedLesson)}
-          onClose={() => setIsIntroDeckOpen(false)}
-          onComplete={() => {
-            setIsIntroDeckOpen(false);
-            handleStartSimulation(0);
-          }}
-        />
-      )}
-
-      {/* MODE 2: SHOW ME (Google Veo On-Demand AI Video Demonstration) */}
-      {isVideoDemoOpen && selectedLesson && (
-        <ShowMeVideoModal
-          isOpen={isVideoDemoOpen}
-          lesson={selectedLesson}
-          onClose={() => setIsVideoDemoOpen(false)}
-          onContinueToGuideMe={() => {
-            setIsVideoDemoOpen(false);
-            handleStartSimulation(1);
-          }}
-        />
-      )}
-
-
-      {/* MODES 2, 3, 4: SHOW ME (0), GUIDE ME (1), TEST ME (2) */}
-      {activeSimulator && (
-        <SimulatorScreen
-          initialPhase={simulatorPhase}
-          lesson={activeSimulator}
-          sourceMeta={activeSimulator.sourceMeta}
-          onClose={() => setActiveSimulator(null)}
-          onFinish={handleSimulationFinish}
-          onOpenBasics={() => {
-            setIsIntroDeckOpen(true);
-          }}
-          onAskTrainer={() => setIsTrainerModalOpen(true)}
-        />
-      )}
-
-      {/* OMNIPRESENT: Ask My Trainer Modal */}
-      <AskTrainerModal
-        isOpen={isTrainerModalOpen}
-        onClose={() => setIsTrainerModalOpen(false)}
-        currentStepTitle={currentContextTitle}
       />
 
       {/* Gyan AI Work Companion Side-Screen Pull-Out Drawer */}
@@ -998,42 +1090,6 @@ export default function App() {
         userOrgId="org_default"
       />
 
-      {/* P0/P1/P2 Process Passport Trainer Review Modal */}
-      <ProcessPassportModal
-        isOpen={isPassportModalOpen}
-        passport={activePassport}
-        perceiveResult={perceiveObservation}
-        onClose={() => setIsPassportModalOpen(false)}
-        onApprovePassport={(approved) => {
-          setActivePassport(approved);
-        }}
-      />
-
-      {/* Employee Learning Journey Modal */}
-      <LearningJourneyModal
-        isOpen={isLearningJourneyOpen}
-        onClose={() => setIsLearningJourneyOpen(false)}
-        onStartSimulation={(lessonId) => {
-          handleSelectSop(lessonId);
-        }}
-      />
-
-      {/* OMNIPRESENT: On The Floor Quick Micro-Lessons */}
-      <MicroLessonSheet
-        isOpen={isMicroLessonOpen}
-        onClose={() => setIsMicroLessonOpen(false)}
-        onOpenBasics={() => {
-          setIsIntroDeckOpen(true);
-        }}
-        onAskTrainer={() => setIsTrainerModalOpen(true)}
-      />
-
-      {/* Fullscreen Bento Architecture Showcase */}
-      {showBentoShowcase && (
-        <div className="fixed inset-0 z-50 bg-[#F7F7F5] dark:bg-[#0A0D12] overflow-y-auto animate-in fade-in duration-200">
-          <BentoArchitectureShowcase onClose={() => setShowBentoShowcase(false)} />
-        </div>
-      )}
       {isProcessing && (
         <div className="fixed inset-0 z-[60] bg-[#0E1116]/85 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center animate-in fade-in duration-300">
            <div className="w-16 h-16 border-4 border-white/20 border-t-indigo-500 rounded-full animate-spin mb-6"></div>
