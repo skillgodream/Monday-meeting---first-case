@@ -556,87 +556,81 @@ export default function ManagerDashboardView({
   return (
     <div className="flex-1 flex flex-col overflow-y-auto px-4 sm:px-6 pt-4 pb-16 text-white relative z-10 w-full max-w-4xl mx-auto space-y-5 font-sans select-none animate-in fade-in duration-150">
       
-      {/* 1. Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-white/10">
-        <div>
-          {onBackToHome && (
-            <button
-              onClick={() => {
-                sounds.playTap();
-                onBackToHome();
-              }}
-              className="text-xs text-white/60 hover:text-white flex items-center gap-1 mb-2 font-medium cursor-pointer transition-colors"
-            >
-              ← Back
-            </button>
-          )}
-          <div className="flex items-center gap-2">
-            <span className="text-[11px] font-mono font-semibold tracking-wider text-white/50 uppercase">
-              Manager Workspace
-            </span>
+      {/* 1. Header & 2. Flat Tab Selector — ONLY on Manager Landing Page */}
+      {!selectedProgressLearner && (
+        <>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-white/10">
+            <div>
+              {onBackToHome && (
+                <button
+                  onClick={() => {
+                    sounds.playTap();
+                    onBackToHome();
+                  }}
+                  className="text-xs text-white/60 hover:text-white flex items-center gap-1 mb-2 font-medium cursor-pointer transition-colors"
+                >
+                  ← Back
+                </button>
+              )}
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] font-mono font-semibold tracking-wider text-white/50 uppercase">
+                  Manager Workspace
+                </span>
+              </div>
+              <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight mt-1">
+                Manager Control Hub
+              </h1>
+              <p className="text-xs text-white/60 mt-0.5">
+                My Team · Assign Training · Progress & Scores
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => {
+                  sounds.playTap();
+                  setIsAssignModalOpen(true);
+                }}
+                className="px-4 py-2 rounded-xl bg-white text-black hover:bg-white/90 font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-sm"
+              >
+                <UserPlus size={14} />
+                <span>Assign SOP</span>
+              </button>
+            </div>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight mt-1">
-            Manager Control Hub
-          </h1>
-          <p className="text-xs text-white/60 mt-0.5">
-            My Team · Assign Training · Progress & Scores
-          </p>
-        </div>
 
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => {
-              sounds.playTap();
-              setIsAssignModalOpen(true);
-            }}
-            className="px-4 py-2 rounded-xl bg-white text-black hover:bg-white/90 font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-sm"
-          >
-            <UserPlus size={14} />
-            <span>Assign SOP</span>
-          </button>
-
-          <button
-            onClick={() => {
-              sounds.playTap();
-              onOpenRoleSwitcher();
-            }}
-            className="px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/15 border border-white/10 text-white font-semibold text-xs transition-all cursor-pointer"
-          >
-            Switch Role
-          </button>
-        </div>
-      </div>
-
-      {/* 2. Flat Tab Selector */}
-      <div className="grid grid-cols-3 gap-1 bg-black p-1 rounded-xl border border-white/10">
-        {[
-          { id: 'team', label: 'My Team', icon: Users },
-          { id: 'assign', label: 'Assign Training', icon: UserPlus },
-          { id: 'scores', label: 'Progress & Scores', icon: Award },
-        ].map((tab) => {
-          const Icon = tab.icon;
-          const isActive = activeSubTab === tab.id;
-          return (
-            <button
-              key={tab.id}
-              onClick={() => {
-                sounds.playTap();
-                setActiveSubTab(tab.id as any);
-                setSelectedProgressLearner(null);
-                setProgressPhaseView('hub');
-              }}
-              className={`py-2 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer ${
-                isActive
-                  ? 'bg-white/15 text-white shadow-sm'
-                  : 'text-white/50 hover:text-white/80'
-              }`}
-            >
-              <Icon size={14} />
-              <span>{tab.label}</span>
-            </button>
-          );
-        })}
-      </div>
+          {/* 2. Flat Tab Selector */}
+          <div className="grid grid-cols-3 gap-1 bg-black p-1 rounded-xl border border-white/10">
+            {[
+              { id: 'team', label: 'My Team', icon: Users },
+              { id: 'assign', label: 'Assign Training', icon: UserPlus },
+              { id: 'scores', label: 'Progress & Scores', icon: Award },
+            ].map((tab) => {
+              const Icon = tab.icon;
+              const isActive = activeSubTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => {
+                    sounds.playTap();
+                    setActiveSubTab(tab.id as any);
+                    setSelectedProgressLearner(null);
+                    setProgressPhaseView('hub');
+                  }}
+                  className={`py-2 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                    isActive
+                      ? 'bg-white/15 text-white shadow-sm'
+                      : 'text-white/50 hover:text-white/80'
+                  }`}
+                >
+                  <Icon size={14} />
+                  <span>{tab.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </>
+      )}
 
       {/* ========================================================================= */}
       {/* TAB 1: MY TEAM                                                            */}
