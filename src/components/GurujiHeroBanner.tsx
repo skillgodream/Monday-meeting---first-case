@@ -23,11 +23,11 @@ export default function GurujiHeroBanner({ className = '' }: GurujiHeroBannerPro
 
         {/* Home Page Character Image */}
         <img
-          src="/Cheerful Coach with Checkmark Phone.png"
+          src="/Monochrome Guruji App Showcase.png"
           alt="Coach Guru"
           className="w-full h-full object-contain relative z-10 drop-shadow-[0_16px_24px_rgba(30,27,75,0.16)]"
           onError={(e) => {
-            (e.target as HTMLImageElement).src = "/Cheerful Coach with Checkmark Phone.png";
+            (e.target as HTMLImageElement).src = "/Monochrome Guruji App Showcase.png";
           }}
         />
       </div>

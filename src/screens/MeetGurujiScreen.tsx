@@ -1,6 +1,6 @@
 import React from 'react';
 
-const gurujiImg = "/Guruji App Coach Presentation.png";
+const gurujiImg = "/Monochrome Guruji App Showcase.png";
 
 interface MeetGurujiScreenProps {
   onContinue: () => void;
@@ -22,20 +22,17 @@ export const MeetGurujiScreen: React.FC<MeetGurujiScreenProps> = ({ onContinue }
       <div className="relative z-10 my-auto flex flex-col items-center justify-center py-4 shrink-0">
         <div className="relative w-80 h-80 sm:w-[400px] sm:h-[400px] flex items-center justify-center">
           <div className="relative z-10 w-full h-full flex items-center justify-center transition-transform duration-700">
-            <picture className="w-full h-full flex items-center justify-center">
-              <source srcSet="/guruji-coach.webp" type="image/webp" />
-              <img
-                src="/Guruji App Coach Presentation.png"
-                alt="Coach Guruji Presentation"
-                referrerPolicy="no-referrer"
-                fetchPriority="high"
-                decoding="sync"
-                className="w-full h-full object-contain"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).src = gurujiImg;
-                }}
-              />
-            </picture>
+            <img
+              src={gurujiImg}
+              alt="Coach Guruji Presentation"
+              referrerPolicy="no-referrer"
+              fetchPriority="high"
+              decoding="sync"
+              className="w-full h-full object-contain"
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = gurujiImg;
+              }}
+            />
           </div>
         </div>
       </div>
