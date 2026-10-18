@@ -19,60 +19,19 @@ export const MeetGurujiScreen: React.FC<MeetGurujiScreenProps> = ({ onContinue }
         <div className="absolute bottom-1/4 left-1/2 -translate-x-1/2 w-[340px] h-[340px] rounded-full bg-sky-500/[0.04] blur-[110px]" />
       </div>
 
-      {/* 2. Center Hero Visual: Character on Apple VisionOS Frosted Liquid Glass Backcard */}
+      {/* 2. Center Hero Visual: Character directly on Pure Black Canvas (no backcard) */}
       <div className="relative z-10 my-auto flex flex-col items-center justify-center py-4 shrink-0">
-        <div className="relative w-80 h-80 sm:w-[390px] sm:h-[390px] flex items-center justify-center p-3">
-          {/* Soft Volumetric Backlight Behind the Glass (creates real optical refraction through the frost) */}
-          <div className="absolute -inset-2 rounded-[52px] pointer-events-none opacity-80">
-            <div className="absolute top-4 left-6 w-44 h-44 rounded-full bg-white/15 blur-[55px]" />
-            <div className="absolute bottom-6 right-6 w-48 h-48 rounded-full bg-sky-400/15 blur-[65px]" />
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-56 h-56 rounded-full bg-indigo-400/10 blur-[60px]" />
-          </div>
-
-          {/* Apple VisionOS Frosted Glass Backcard */}
-          <div
-            className="absolute inset-0 rounded-[46px] backdrop-blur-3xl backdrop-saturate-150 border border-white/25 shadow-[inset_0_1.5px_1.5px_rgba(255,255,255,0.6),inset_1px_0_1px_rgba(255,255,255,0.25),inset_0_-1.5px_2px_rgba(255,255,255,0.14),0_30px_70px_-10px_rgba(0,0,0,0.85),0_0_45px_rgba(255,255,255,0.06)] overflow-hidden pointer-events-none"
-            style={{
-              background:
-                'linear-gradient(145deg, rgba(255,255,255,0.22) 0%, rgba(255,255,255,0.09) 38%, rgba(255,255,255,0.04) 72%, rgba(255,255,255,0.12) 100%)',
-            }}
-          >
-            {/* Top specular rim reflection shimmer */}
-            <div className="absolute inset-x-6 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-white/80 to-transparent" />
-
-            {/* Left edge vertical specular highlight */}
-            <div className="absolute inset-y-8 left-0 w-[1px] bg-gradient-to-b from-white/55 via-white/15 to-transparent" />
-
-            {/* Diagonal Apple glass surface sheen */}
-            <div
-              className="absolute inset-0 pointer-events-none"
-              style={{
-                background:
-                  'linear-gradient(125deg, rgba(255,255,255,0.20) 0%, rgba(255,255,255,0.05) 32%, rgba(255,255,255,0) 58%)',
-              }}
-            />
-
-            {/* Soft top-left radial lens flare */}
-            <div className="absolute -top-16 -left-16 w-56 h-56 rounded-full bg-white/15 blur-2xl" />
-
-            {/* Subtle bottom-right inner glass rim glow */}
-            <div className="absolute -bottom-16 -right-16 w-52 h-52 rounded-full bg-sky-300/10 blur-2xl" />
-
-            {/* Bottom edge subtle refraction line */}
-            <div className="absolute inset-x-10 bottom-0 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent" />
-          </div>
-          
-          {/* Hero Presentation Image inside the Apple Glass Card */}
+        <div className="relative w-80 h-80 sm:w-[400px] sm:h-[400px] flex items-center justify-center">
           <motion.div
             animate={{ y: [0, -6, 0] }}
             transition={{ repeat: Infinity, duration: 4, ease: 'easeInOut' }}
-            className="relative z-10 w-full h-full flex items-center justify-center overflow-hidden rounded-[36px]"
+            className="relative z-10 w-full h-full flex items-center justify-center"
           >
             <img
               src="/Guruji App Coach Presentation.png"
               alt="Coach Guruji Presentation"
               referrerPolicy="no-referrer"
-              className="w-full h-full object-contain filter drop-shadow-[0_22px_38px_rgba(0,0,0,0.75)]"
+              className="w-full h-full object-contain"
               onError={(e) => {
                 (e.target as HTMLImageElement).src = gurujiImg;
               }}
