@@ -66,31 +66,124 @@ export interface UserItem {
   department: string;
   location: string;
   status: 'Active' | 'Inactive';
+  journeyStage?: 'Phase 1 (Day 1–10)' | 'Phase 2 (Continuous)';
+  phase3Selected?: boolean;
 }
+
+export type JourneyPhaseType =
+  | 'Phase 1: New Hire (Day 1–10)'
+  | 'Phase 2: Continuous / Mandate'
+  | 'Phase 3: Selective Upskilling';
 
 export interface CampaignItem {
   id: string;
   title: string;
   sop: string;
+  sopId?: string;
   target: string;
   department: string;
   location: string;
   completion: number;
+  journeyPhase?: JourneyPhaseType;
 }
+
+export type AssignmentSubView = 'hub' | 'new_hire' | 'continuous' | 'upskilling';
+
+export interface RoleModuleItem {
+  id: string;
+  title: string;
+  subtitle: string;
+  sopId?: string;
+}
+
+export const INITIAL_ASSIGNMENT_ROLES: string[] = [
+  'Cleanroom Operator',
+  'Housekeeping Specialist',
+  'Warehouse Picker',
+  'Floor Assembly Tech',
+  'Quality Assurance Lead',
+];
+
+export const INITIAL_ROLE_MODULES: Record<string, RoleModuleItem[]> = {
+  // NEW HIRE (Day 1 - Day 10)
+  'new_hire__Cleanroom Operator': [
+    { id: 'nh_co_1', title: 'Aseptic Hand Hygiene & Gowning', subtitle: 'Day 1–3 · Core SOP', sopId: 'aseptic-hygiene' },
+    { id: 'nh_co_2', title: 'Airlock Entry & Contamination Control', subtitle: 'Day 4–7 · Safety Protocol', sopId: 'safety-first' },
+    { id: 'nh_co_3', title: 'Sterile Bay Floor Readiness Sign-Off', subtitle: 'Day 8–10 · Final Check', sopId: 'aseptic-hygiene' },
+  ],
+  'new_hire__Housekeeping Specialist': [
+    { id: 'nh_hs_1', title: 'Room Sanitization & Disinfection', subtitle: 'Day 1–3 · Core SOP', sopId: 'housekeeping_sanitization' },
+    { id: 'nh_hs_2', title: 'Chemical Dilution & Contact Dwell Time', subtitle: 'Day 4–7 · Safety Protocol', sopId: 'housekeeping_sanitization' },
+    { id: 'nh_hs_3', title: 'Terminal Cleaning Supervisor Sign-Off', subtitle: 'Day 8–10 · Final Check', sopId: 'housekeeping_sanitization' },
+  ],
+  'new_hire__Warehouse Picker': [
+    { id: 'nh_wp_1', title: 'Warehouse Order Picking 101', subtitle: 'Day 1–3 · Core SOP', sopId: 'picking-101' },
+    { id: 'nh_wp_2', title: 'Barcode Scanner & SKU Verification', subtitle: 'Day 4–7 · Operations', sopId: 'picking-101' },
+    { id: 'nh_wp_3', title: 'Pallet Stacking & Bay Safety Check', subtitle: 'Day 8–10 · Final Check', sopId: 'safety-first' },
+  ],
+  'new_hire__Floor Assembly Tech': [
+    { id: 'nh_fa_1', title: 'Precision Mechanical Assembly', subtitle: 'Day 1–5 · Core SOP', sopId: 'picking-101' },
+    { id: 'nh_fa_2', title: 'ESD Wrist Strap & Workstation Grounding', subtitle: 'Day 6–10 · Safety Protocol', sopId: 'safety-first' },
+  ],
+  'new_hire__Quality Assurance Lead': [
+    { id: 'nh_qa_1', title: 'First-Article Inspection Baseline', subtitle: 'Day 1–5 · Core SOP', sopId: 'safety-first' },
+    { id: 'nh_qa_2', title: 'Non-Conformance & Quarantine Logging', subtitle: 'Day 6–10 · Compliance', sopId: 'picking-101' },
+  ],
+
+  // CONTINUOUS LEARNING
+  'continuous__Cleanroom Operator': [
+    { id: 'ct_co_1', title: 'Quarterly Gowning Re-Qualification', subtitle: 'Ongoing · Mandatory Refresher', sopId: 'aseptic-hygiene' },
+    { id: 'ct_co_2', title: 'ISO-5 Particle Excursion Protocol', subtitle: 'Compliance Mandate', sopId: 'safety-first' },
+  ],
+  'continuous__Housekeeping Specialist': [
+    { id: 'ct_hs_1', title: 'High-Touch Disinfection Cycle Audit', subtitle: 'Ongoing · Shift Mandate', sopId: 'housekeeping_sanitization' },
+    { id: 'ct_hs_2', title: 'Biohazard Spill & PPE Update', subtitle: 'Safety Mandate', sopId: 'safety-first' },
+  ],
+  'continuous__Warehouse Picker': [
+    { id: 'ct_wp_1', title: 'High-Bay Forklift & Aisle Safety', subtitle: 'Ongoing · Mandatory Refresher', sopId: 'safety-first' },
+    { id: 'ct_wp_2', title: 'Cold-Chain Packaging Integrity', subtitle: 'SOP Update', sopId: 'picking-101' },
+  ],
+  'continuous__Floor Assembly Tech': [
+    { id: 'ct_fa_1', title: 'Torque Calibration & Tool Audit', subtitle: 'Ongoing · Monthly Check', sopId: 'picking-101' },
+  ],
+  'continuous__Quality Assurance Lead': [
+    { id: 'ct_qa_1', title: 'CAPA Root-Cause Audit Standard', subtitle: 'Ongoing · Compliance Mandate', sopId: 'safety-first' },
+  ],
+
+  // UPSKILLING
+  'upskilling__Cleanroom Operator': [
+    { id: 'up_co_1', title: 'Sterile Line Shift Lead Certification', subtitle: 'Selective Upskilling · Lead Track', sopId: 'aseptic-hygiene' },
+    { id: 'up_co_2', title: 'Environmental Viable Sampling Mastery', subtitle: 'Advanced Technical Track', sopId: 'safety-first' },
+  ],
+  'upskilling__Housekeeping Specialist': [
+    { id: 'up_hs_1', title: 'Infection Control Floor Supervisor', subtitle: 'Selective Upskilling · Lead Track', sopId: 'housekeeping_sanitization' },
+    { id: 'up_hs_2', title: 'UV-C Autonomous Sterilization Ops', subtitle: 'Advanced Equipment Track', sopId: 'housekeeping_sanitization' },
+  ],
+  'upskilling__Warehouse Picker': [
+    { id: 'up_wp_1', title: 'Inventory Control & QA Hold Lead', subtitle: 'Selective Upskilling · Lead Track', sopId: 'picking-101' },
+    { id: 'up_wp_2', title: 'Automated Fleet & Dock Dispatch', subtitle: 'Advanced Logistics Track', sopId: 'picking-101' },
+  ],
+  'upskilling__Floor Assembly Tech': [
+    { id: 'up_fa_1', title: 'Master Line Diagnostics & Rework', subtitle: 'Selective Upskilling · Lead Track', sopId: 'picking-101' },
+  ],
+  'upskilling__Quality Assurance Lead': [
+    { id: 'up_qa_1', title: 'ISO 13485 Internal Lead Auditor', subtitle: 'Selective Upskilling · Executive Track', sopId: 'safety-first' },
+  ],
+};
 
 const INITIAL_USERS: UserItem[] = [
   { id: 'u1', name: 'Vikram Sharma', email: 'vikram.s@org.internal', role: 'Admin', department: 'Executive Operations', location: 'Munich Facility', status: 'Active' },
-  { id: 'u2', name: 'Priya Patel', email: 'priya.p@org.internal', role: 'Learner', department: 'Cleanroom', location: 'Munich Facility', status: 'Active' },
-  { id: 'u3', name: 'Carlos Mendez', email: 'carlos.m@org.internal', role: 'Learner', department: 'Housekeeping Services', location: 'Bay A/B', status: 'Active' },
-  { id: 'u4', name: 'Amina Al-Mansoor', email: 'amina.a@org.internal', role: 'Learner', department: 'Manufacturing', location: 'Bay A/B', status: 'Active' },
+  { id: 'u2', name: 'Priya Patel', email: 'priya.p@org.internal', role: 'Learner', department: 'Cleanroom', location: 'Munich Facility', status: 'Active', journeyStage: 'Phase 2 (Continuous)', phase3Selected: false },
+  { id: 'u3', name: 'Carlos Mendez', email: 'carlos.m@org.internal', role: 'Learner', department: 'Housekeeping Services', location: 'Bay A/B', status: 'Active', journeyStage: 'Phase 1 (Day 1–10)', phase3Selected: false },
+  { id: 'u4', name: 'Amina Al-Mansoor', email: 'amina.a@org.internal', role: 'Learner', department: 'Manufacturing', location: 'Bay A/B', status: 'Active', journeyStage: 'Phase 2 (Continuous)', phase3Selected: true },
   { id: 'u5', name: 'David Kim', email: 'david.k@org.internal', role: 'Manager', department: 'Floor Operations', location: 'Airport Terminal', status: 'Active' },
   { id: 'u6', name: 'Sarah Jenkins', email: 'sarah.j@org.internal', role: 'Manager', department: 'Quality Assurance', location: 'Warehouse North', status: 'Active' },
 ];
 
 const INITIAL_CAMPAIGNS: CampaignItem[] = [
-  { id: 'c1', title: 'Q4 Cleanroom Sterilization Protocol', sop: 'Aseptic Hand Hygiene & Gowning', target: 'Cleanroom Division (42 Staff)', department: 'Cleanroom', location: 'Munich Facility', completion: 94 },
-  { id: 'c2', title: 'High-Touch Disinfection Mandate', sop: 'Room Sanitization & Disinfection', target: 'Housekeeping Services (68 Staff)', department: 'Housekeeping', location: 'Bay A/B', completion: 88 },
-  { id: 'c3', title: 'ESD Assembly Line Re-Certification', sop: 'Precision Mechanical Assembly', target: 'Assembly Technicians (32 Staff)', department: 'Assembly', location: 'Bay A/B', completion: 100 },
+  { id: 'c1', title: 'Day 1–10 Cleanroom & Safety Baseline', sop: 'Aseptic Hand Hygiene & Gowning', sopId: 'aseptic-hygiene', target: 'New Hires (Day 1–10)', department: 'Cleanroom', location: 'Munich Facility', completion: 94, journeyPhase: 'Phase 1: New Hire (Day 1–10)' },
+  { id: 'c2', title: 'High-Touch Disinfection Mandate', sop: 'Room Sanitization & Disinfection', sopId: 'housekeeping_sanitization', target: 'Housekeeping Services (68 Staff)', department: 'Housekeeping', location: 'Bay A/B', completion: 88, journeyPhase: 'Phase 2: Continuous / Mandate' },
+  { id: 'c3', title: 'Senior Lead QA & ESD Certification', sop: 'Precision Mechanical Assembly', sopId: 'picking-101', target: 'Admin-Selected Upskilling Cohort', department: 'Assembly', location: 'Bay A/B', completion: 100, journeyPhase: 'Phase 3: Selective Upskilling' },
 ];
 
 export const getModuleCreationDate = (lesson: Lesson, index: number): string => {
@@ -151,8 +244,50 @@ export default function AdminDashboardView({
   const [selectedRoleFilter, setSelectedRoleFilter] = useState<string>('All');
 
   // State arrays
-  const [userList, setUserList] = useState<UserItem[]>(INITIAL_USERS);
-  const [campaigns, setCampaigns] = useState<CampaignItem[]>(INITIAL_CAMPAIGNS);
+  const [userList, setUserList] = useState<UserItem[]>(() => {
+    const phase3Global = localStorage.getItem('guruji_phase3_upskilling_enabled') === 'true';
+    return INITIAL_USERS.map((u, idx) =>
+      idx === 1 ? { ...u, phase3Selected: phase3Global } : u
+    );
+  });
+  const [campaigns, setCampaigns] = useState<CampaignItem[]>(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem('guruji_admin_campaigns') || 'null');
+      return Array.isArray(saved) && saved.length > 0 ? saved : INITIAL_CAMPAIGNS;
+    } catch {
+      return INITIAL_CAMPAIGNS;
+    }
+  });
+
+  // Clean Apple-Style Assignment Sub-View & Role/Module State
+  const [assignmentSubView, setAssignmentSubView] = useState<AssignmentSubView>('hub');
+  const [assignmentRoles, setAssignmentRoles] = useState<string[]>(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem('guruji_assignment_roles') || 'null');
+      return Array.isArray(saved) && saved.length > 0 ? saved : INITIAL_ASSIGNMENT_ROLES;
+    } catch {
+      return INITIAL_ASSIGNMENT_ROLES;
+    }
+  });
+  const [selectedAssignmentRole, setSelectedAssignmentRole] = useState<string>(() => {
+    return INITIAL_ASSIGNMENT_ROLES[0];
+  });
+  const [isRoleDropdownOpen, setIsRoleDropdownOpen] = useState(false);
+  const [isCreateRoleModalOpen, setIsCreateRoleModalOpen] = useState(false);
+  const [newRoleNameInput, setNewRoleNameInput] = useState('');
+
+  const [roleModulesMap, setRoleModulesMap] = useState<Record<string, RoleModuleItem[]>>(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem('guruji_role_phase_modules') || 'null');
+      return saved && typeof saved === 'object' ? { ...INITIAL_ROLE_MODULES, ...saved } : INITIAL_ROLE_MODULES;
+    } catch {
+      return INITIAL_ROLE_MODULES;
+    }
+  });
+  const [isAddModuleModalOpen, setIsAddModuleModalOpen] = useState(false);
+  const [newModuleTitleInput, setNewModuleTitleInput] = useState('');
+  const [newModuleSubtitleInput, setNewModuleSubtitleInput] = useState('');
+  const [newModuleSopId, setNewModuleSopId] = useState('custom');
 
   // Modal States
   const [isAddUserModalOpen, setIsAddUserModalOpen] = useState(false);
@@ -416,11 +551,18 @@ export default function AdminDashboardView({
             <button
               onClick={() => {
                 sounds.playTap();
-                setActiveViewMode('landing');
+                if (activeViewMode === 'assignments' && assignmentSubView !== 'hub') {
+                  setAssignmentSubView('hub');
+                  setIsRoleDropdownOpen(false);
+                } else {
+                  setActiveViewMode('landing');
+                }
               }}
               className="text-[11px] font-bold tracking-widest uppercase text-[#8E8E93] hover:text-white flex items-center gap-1 transition-colors cursor-pointer mb-1"
             >
-              ← ADMIN WORKSPACE
+              {activeViewMode === 'assignments' && assignmentSubView !== 'hub'
+                ? '← ASSIGNMENTS'
+                : '← ADMIN WORKSPACE'}
             </button>
           ) : (
             <span className="text-[11px] font-bold tracking-widest uppercase text-[#8E8E93] block">
@@ -436,7 +578,13 @@ export default function AdminDashboardView({
               : activeViewMode === 'settings'
               ? 'Settings'
               : activeViewMode === 'assignments'
-              ? 'Assignments'
+              ? assignmentSubView === 'new_hire'
+                ? 'New Hire'
+                : assignmentSubView === 'continuous'
+                ? 'Continuous Learning'
+                : assignmentSubView === 'upskilling'
+                ? 'Upskilling'
+                : 'Assignments'
               : activeViewMode === 'repository'
               ? 'Content Library'
               : activeViewMode === 'reports'
@@ -453,7 +601,13 @@ export default function AdminDashboardView({
               : activeViewMode === 'settings'
               ? 'Configure global training threshold & retry controls.'
               : activeViewMode === 'assignments'
-              ? 'Deploy mandatory procedures and track frontline compliance.'
+              ? assignmentSubView === 'new_hire'
+                ? 'Day 1 – Day 10 role onboarding modules.'
+                : assignmentSubView === 'continuous'
+                ? 'Ongoing training and mandatory role modules.'
+                : assignmentSubView === 'upskilling'
+                ? 'Selective skill progression modules by role.'
+                : 'Select a training phase to manage role modules.'
               : activeViewMode === 'repository'
               ? 'Scan, upload and manage SOPs and training content.'
               : activeViewMode === 'reports'
@@ -525,6 +679,8 @@ export default function AdminDashboardView({
             <div
               onClick={() => {
                 sounds.playTap();
+                setAssignmentSubView('hub');
+                setIsRoleDropdownOpen(false);
                 setActiveViewMode('assignments');
               }}
               className="p-4 sm:p-5 bg-[#0A0A0C] hover:bg-[#121215] rounded-2xl border border-white/10 flex items-center justify-between cursor-pointer transition-all active:scale-[0.99]"
@@ -740,6 +896,13 @@ export default function AdminDashboardView({
             </button>
           </div>
 
+          {/* Info Banner on Phase 3 Selective Upskilling Control */}
+          <div className="p-3.5 rounded-2xl bg-[#0A0A0C] border border-white/10 flex items-center justify-between gap-3 text-xs">
+            <div className="text-[#8E8E93]">
+              <strong className="text-white">Learning Journey Control:</strong> New hires start in <span className="text-white">Phase 1 (Day 1–10)</span> and move to <span className="text-white">Phase 2 (Continuous)</span>. Use the toggle on any Learner row below to unlock <span className="text-sky-400 font-semibold">Phase 3 Upskilling</span> for that employee.
+            </div>
+          </div>
+
           <div className="bg-[#0A0A0C] rounded-2xl border border-white/10 divide-y divide-white/10 overflow-hidden">
             {filteredUsers.length === 0 ? (
               <div className="p-8 text-center text-xs text-[#8E8E93]">
@@ -749,14 +912,57 @@ export default function AdminDashboardView({
               filteredUsers.map((u) => (
                 <div
                   key={u.id}
-                  className="p-4 flex items-center justify-between gap-3 hover:bg-white/[0.02] transition-colors"
+                  className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-white/[0.02] transition-colors"
                 >
                   <div className="min-w-0">
-                    <span className="text-sm font-bold text-white block truncate">{u.name}</span>
-                    <span className="text-xs font-mono text-[#8E8E93] block truncate mt-0.5">{u.email}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-bold text-white truncate">{u.name}</span>
+                      {u.role === 'Learner' && (
+                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-white/5 border border-white/10 text-[#8E8E93]">
+                          {u.journeyStage || 'Phase 1 (Day 1–10)'}
+                        </span>
+                      )}
+                    </div>
+                    <span className="text-xs font-mono text-[#8E8E93] block truncate mt-0.5">
+                      {u.email} · {u.department}
+                    </span>
                   </div>
 
-                  <div className="flex items-center gap-3 shrink-0">
+                  <div className="flex items-center gap-2.5 shrink-0 flex-wrap">
+                    {u.role === 'Learner' && (
+                      <button
+                        onClick={() => {
+                          sounds.playTap();
+                          const nextState = !u.phase3Selected;
+                          setUserList((prev) =>
+                            prev.map((item) =>
+                              item.id === u.id ? { ...item, phase3Selected: nextState } : item
+                            )
+                          );
+                          localStorage.setItem('guruji_phase3_upskilling_enabled', String(nextState));
+                          logAuditEvent(
+                            nextState ? 'PHASE3_UPSKILLING_UNLOCKED' : 'PHASE3_UPSKILLING_LOCKED',
+                            `Admin ${nextState ? 'unlocked' : 'locked'} Phase 3 Selective Upskilling for ${u.name}`,
+                            'admin_user',
+                            'System Admin'
+                          );
+                          showToast(
+                            nextState
+                              ? `Phase 3 Upskilling unlocked for ${u.name}!`
+                              : `Phase 3 Upskilling locked for ${u.name}.`
+                          );
+                        }}
+                        className={`px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all cursor-pointer border ${
+                          u.phase3Selected
+                            ? 'bg-white text-black border-white shadow-sm'
+                            : 'bg-[#1C1C1E] hover:bg-white/10 text-[#8E8E93] hover:text-white border-white/10'
+                        }`}
+                        title="Toggle Phase 3 Selective Upskilling in Employee Learning Journey"
+                      >
+                        {u.phase3Selected ? '★ Phase 3 Upskilling: Unlocked' : 'Unlock Phase 3 Upskilling'}
+                      </button>
+                    )}
+
                     <span className="text-xs font-medium text-slate-300 bg-[#1C1C1E] px-3 py-1 rounded-full text-center min-w-[70px]">
                       {u.role}
                     </span>
@@ -874,45 +1080,360 @@ export default function AdminDashboardView({
       )}
 
       {/* ========================================================================= */}
-      {/* 4. ASSIGNMENTS SUB-PAGE                                                    */}
+      {/* 4. ASSIGNMENTS SUB-PAGE (CLEAN APPLE-STYLE HUB & ROLE MODULE MANAGER)     */}
       {/* ========================================================================= */}
       {activeViewMode === 'assignments' && (
-        <div className="space-y-4 animate-in fade-in duration-200">
-          
-          <div className="p-5 bg-[#0A0A0C] rounded-2xl border border-white/10 space-y-1">
-            <h3 className="text-base font-bold text-white">Organization-Wide Training Campaigns</h3>
-            <p className="text-xs text-[#8E8E93]">
-              Deploy mandatory procedures and track frontline compliance across cohorts.
-            </p>
-          </div>
-
-          <div className="bg-[#0A0A0C] rounded-2xl border border-white/10 divide-y divide-white/10 overflow-hidden">
-            {campaigns.map((camp) => (
-              <div key={camp.id} className="p-5 space-y-3">
-                <div className="space-y-1">
-                  <h4 className="text-sm font-bold text-white">{camp.title}</h4>
-                  <p className="text-xs text-[#8E8E93]">
-                    SOP: {camp.sop} · Target: {camp.target}
-                  </p>
+        <div className="space-y-5 animate-in fade-in duration-200">
+          {assignmentSubView === 'hub' ? (
+            /* --------------------------------------------------------------------- */
+            /* 4A. ASSIGNMENTS LANDING HUB (VERY CLEAN STACK - NO MESSY TEXT)        */
+            /* --------------------------------------------------------------------- */
+            <div className="space-y-3">
+              {/* 1. New Hire */}
+              <div
+                onClick={() => {
+                  sounds.playTap();
+                  setAssignmentSubView('new_hire');
+                  setIsRoleDropdownOpen(false);
+                }}
+                className="p-4 sm:p-5 bg-[#0A0A0C] hover:bg-[#121215] rounded-2xl border border-white/10 flex items-center justify-between cursor-pointer transition-all active:scale-[0.99]"
+              >
+                <div className="flex items-center gap-4 min-w-0">
+                  <div className="w-11 h-11 rounded-full bg-[#1C1C1E] border border-white/10 text-white flex items-center justify-center shrink-0">
+                    <UserPlus size={20} />
+                  </div>
+                  <div className="min-w-0">
+                    <h3 className="text-base font-bold text-white tracking-tight">New Hire</h3>
+                    <p className="text-xs text-[#8E8E93] font-normal mt-0.5 truncate">
+                      Day 1 – Day 10 onboarding modules
+                    </p>
+                  </div>
                 </div>
-
-                <div className="flex items-center justify-between pt-1">
-                  <span className="text-xs font-bold text-white font-mono">
-                    {camp.completion}% Completed
-                  </span>
-                  <button
-                    onClick={() => {
-                      sounds.playTap();
-                      showToast(`Nudge sent to ${camp.target}.`);
-                    }}
-                    className="px-4 py-1.5 rounded-xl bg-[#1C1C1E] hover:bg-[#2C2C2E] border border-white/15 text-xs font-semibold text-white transition-all cursor-pointer"
-                  >
-                    Nudge
-                  </button>
-                </div>
+                <ChevronRight size={18} className="text-[#8E8E93] shrink-0 ml-2" />
               </div>
-            ))}
-          </div>
+
+              {/* 2. Continuous Learning */}
+              <div
+                onClick={() => {
+                  sounds.playTap();
+                  setAssignmentSubView('continuous');
+                  setIsRoleDropdownOpen(false);
+                }}
+                className="p-4 sm:p-5 bg-[#0A0A0C] hover:bg-[#121215] rounded-2xl border border-white/10 flex items-center justify-between cursor-pointer transition-all active:scale-[0.99]"
+              >
+                <div className="flex items-center gap-4 min-w-0">
+                  <div className="w-11 h-11 rounded-full bg-[#1C1C1E] border border-white/10 text-white flex items-center justify-center shrink-0">
+                    <BookOpen size={20} />
+                  </div>
+                  <div className="min-w-0">
+                    <h3 className="text-base font-bold text-white tracking-tight">Continuous Learning</h3>
+                    <p className="text-xs text-[#8E8E93] font-normal mt-0.5 truncate">
+                      Ongoing training and mandatory procedures
+                    </p>
+                  </div>
+                </div>
+                <ChevronRight size={18} className="text-[#8E8E93] shrink-0 ml-2" />
+              </div>
+
+              {/* 3. Upskilling */}
+              <div
+                onClick={() => {
+                  sounds.playTap();
+                  setAssignmentSubView('upskilling');
+                  setIsRoleDropdownOpen(false);
+                }}
+                className="p-4 sm:p-5 bg-[#0A0A0C] hover:bg-[#121215] rounded-2xl border border-white/10 flex items-center justify-between cursor-pointer transition-all active:scale-[0.99]"
+              >
+                <div className="flex items-center gap-4 min-w-0">
+                  <div className="w-11 h-11 rounded-full bg-[#1C1C1E] border border-white/10 text-white flex items-center justify-center shrink-0">
+                    <Award size={20} />
+                  </div>
+                  <div className="min-w-0">
+                    <h3 className="text-base font-bold text-white tracking-tight">Upskilling</h3>
+                    <p className="text-xs text-[#8E8E93] font-normal mt-0.5 truncate">
+                      Selective skill progression modules
+                    </p>
+                  </div>
+                </div>
+                <ChevronRight size={18} className="text-[#8E8E93] shrink-0 ml-2" />
+              </div>
+            </div>
+          ) : (
+            /* --------------------------------------------------------------------- */
+            /* 4B. PHASE SUB-SCREEN (NEW HIRE / CONTINUOUS / UPSKILLING)             */
+            /*     Apple-Style Role Dropdown + Clean Modules List                    */
+            /* --------------------------------------------------------------------- */
+            (() => {
+              const activeRole = assignmentRoles.includes(selectedAssignmentRole)
+                ? selectedAssignmentRole
+                : assignmentRoles[0] || 'General Operator';
+              const phaseKey = `${assignmentSubView}__${activeRole}`;
+              const currentModules = roleModulesMap[phaseKey] || [];
+
+              const handleDeleteCurrentRole = (roleToRemove: string) => {
+                if (assignmentRoles.length <= 1) {
+                  showToast('At least one role must remain.');
+                  return;
+                }
+                sounds.playTap();
+                const updatedRoles = assignmentRoles.filter((r) => r !== roleToRemove);
+                setAssignmentRoles(updatedRoles);
+                localStorage.setItem('guruji_assignment_roles', JSON.stringify(updatedRoles));
+                if (activeRole === roleToRemove) {
+                  setSelectedAssignmentRole(updatedRoles[0]);
+                }
+                setIsRoleDropdownOpen(false);
+                showToast(`Role '${roleToRemove}' deleted.`);
+              };
+
+              const handleDeleteModule = (moduleId: string, moduleTitle: string) => {
+                sounds.playTap();
+                const updatedList = currentModules.filter((m) => m.id !== moduleId);
+                const nextMap = { ...roleModulesMap, [phaseKey]: updatedList };
+                setRoleModulesMap(nextMap);
+                localStorage.setItem('guruji_role_phase_modules', JSON.stringify(nextMap));
+                showToast(`Removed '${moduleTitle}'.`);
+              };
+
+              return (
+                <div className="space-y-6 animate-in fade-in duration-150">
+                  {/* STEP 1: APPLE-STYLE ROLE SELECTOR + CREATE / DELETE ROLE */}
+                  <div className="space-y-2.5 relative">
+                    <div className="flex items-center justify-between px-1">
+                      <span className="text-[11px] font-bold uppercase tracking-widest text-[#8E8E93]">
+                        Role
+                      </span>
+
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            sounds.playTap();
+                            setNewRoleNameInput('');
+                            setIsCreateRoleModalOpen(true);
+                            setIsRoleDropdownOpen(false);
+                          }}
+                          className="px-3 py-1.5 rounded-xl bg-[#1C1C1E] hover:bg-[#2C2C2E] border border-white/10 text-white text-xs font-semibold flex items-center gap-1 transition-all cursor-pointer"
+                        >
+                          <Plus size={13} />
+                          <span>New Role</span>
+                        </button>
+
+                        {assignmentRoles.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteCurrentRole(activeRole)}
+                            className="p-1.5 rounded-xl bg-[#1C1C1E] hover:bg-rose-500/20 border border-white/10 text-[#8E8E93] hover:text-rose-400 transition-all cursor-pointer"
+                            title={`Delete ${activeRole}`}
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Apple-Style Glass Dropdown Trigger */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        sounds.playTap();
+                        setIsRoleDropdownOpen((prev) => !prev);
+                      }}
+                      className="w-full p-4 rounded-2xl bg-[#1C1C1E]/90 hover:bg-[#242428] backdrop-blur-xl border border-white/15 flex items-center justify-between text-left transition-all cursor-pointer shadow-lg"
+                    >
+                      <div className="min-w-0">
+                        <span className="text-base font-bold text-white block truncate">
+                          {activeRole}
+                        </span>
+                        <span className="text-xs text-[#8E8E93] block mt-0.5">
+                          {currentModules.length} {currentModules.length === 1 ? 'module' : 'modules'} assigned
+                        </span>
+                      </div>
+
+                      <div
+                        className={`w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-[#8E8E93] transition-transform duration-200 ${
+                          isRoleDropdownOpen ? 'rotate-180 text-white' : ''
+                        }`}
+                      >
+                        <ChevronDown size={16} />
+                      </div>
+                    </button>
+
+                    {/* Apple-Style Glass Dropdown Popover List */}
+                    {isRoleDropdownOpen && (
+                      <div className="w-full rounded-2xl bg-[#1C1C1E]/95 backdrop-blur-2xl border border-white/15 shadow-2xl divide-y divide-white/10 overflow-hidden animate-in fade-in zoom-in-95 duration-150 z-30">
+                        <div className="max-h-60 overflow-y-auto divide-y divide-white/5">
+                          {assignmentRoles.map((roleItem) => {
+                            const isSelected = roleItem === activeRole;
+                            const count = (roleModulesMap[`${assignmentSubView}__${roleItem}`] || []).length;
+                            return (
+                              <div
+                                key={roleItem}
+                                onClick={() => {
+                                  sounds.playTap();
+                                  setSelectedAssignmentRole(roleItem);
+                                  setIsRoleDropdownOpen(false);
+                                }}
+                                className={`px-4 py-3.5 flex items-center justify-between gap-3 cursor-pointer transition-colors ${
+                                  isSelected ? 'bg-white/10' : 'hover:bg-white/5'
+                                }`}
+                              >
+                                <div className="flex items-center gap-3 min-w-0">
+                                  <div
+                                    className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${
+                                      isSelected
+                                        ? 'bg-white text-black'
+                                        : 'border border-white/20 text-transparent'
+                                    }`}
+                                  >
+                                    <Check size={12} strokeWidth={3} />
+                                  </div>
+                                  <div className="min-w-0">
+                                    <span className="text-sm font-bold text-white block truncate">
+                                      {roleItem}
+                                    </span>
+                                    <span className="text-[11px] text-[#8E8E93] block">
+                                      {count} {count === 1 ? 'module' : 'modules'}
+                                    </span>
+                                  </div>
+                                </div>
+
+                                {assignmentRoles.length > 1 && (
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleDeleteCurrentRole(roleItem);
+                                    }}
+                                    className="p-1.5 rounded-lg text-[#8E8E93] hover:text-rose-400 hover:bg-rose-500/15 transition-colors cursor-pointer shrink-0"
+                                    title={`Delete ${roleItem}`}
+                                  >
+                                    <Trash2 size={14} />
+                                  </button>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            sounds.playTap();
+                            setNewRoleNameInput('');
+                            setIsRoleDropdownOpen(false);
+                            setIsCreateRoleModalOpen(true);
+                          }}
+                          className="w-full px-4 py-3 bg-white/[0.03] hover:bg-white/[0.08] text-xs font-bold text-white flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                        >
+                          <Plus size={14} />
+                          <span>Create New Role</span>
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* STEP 2: CLEAN MODULES LIST FOR SELECTED ROLE */}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between px-1">
+                      <span className="text-[11px] font-bold uppercase tracking-widest text-[#8E8E93]">
+                        Modules ({currentModules.length})
+                      </span>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          sounds.playTap();
+                          setNewModuleTitleInput('');
+                          setNewModuleSubtitleInput(
+                            assignmentSubView === 'new_hire'
+                              ? 'Day 1–10 · Core SOP'
+                              : assignmentSubView === 'continuous'
+                              ? 'Ongoing · Mandatory'
+                              : 'Selective Upskilling'
+                          );
+                          setNewModuleSopId('custom');
+                          setIsAddModuleModalOpen(true);
+                        }}
+                        className="px-3.5 py-1.5 rounded-xl bg-white hover:bg-slate-100 text-black font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-sm"
+                      >
+                        <Plus size={14} />
+                        <span>Add Module</span>
+                      </button>
+                    </div>
+
+                    {currentModules.length === 0 ? (
+                      <div className="p-8 bg-[#0A0A0C] rounded-2xl border border-white/10 text-center space-y-3">
+                        <p className="text-xs text-[#8E8E93]">
+                          No modules assigned to <strong className="text-white">{activeRole}</strong> yet.
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            sounds.playTap();
+                            setNewModuleTitleInput('');
+                            setNewModuleSubtitleInput(
+                              assignmentSubView === 'new_hire'
+                                ? 'Day 1–10 · Core SOP'
+                                : assignmentSubView === 'continuous'
+                                ? 'Ongoing · Mandatory'
+                                : 'Selective Upskilling'
+                            );
+                            setNewModuleSopId('custom');
+                            setIsAddModuleModalOpen(true);
+                          }}
+                          className="px-4 py-2 rounded-xl bg-[#1C1C1E] hover:bg-[#2C2C2E] border border-white/10 text-white text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer transition-all"
+                        >
+                          <Plus size={14} />
+                          <span>Add First Module</span>
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="bg-[#0A0A0C] rounded-2xl border border-white/10 divide-y divide-white/10 overflow-hidden">
+                        {currentModules.map((mod, idx) => (
+                          <div
+                            key={mod.id}
+                            className="p-4 flex items-center justify-between gap-3.5 hover:bg-white/[0.02] transition-colors"
+                          >
+                            <div
+                              onClick={() => {
+                                if (mod.sopId) {
+                                  sounds.playTap();
+                                  onSelectSop(mod.sopId, mod.title);
+                                }
+                              }}
+                              className="flex items-center gap-3.5 min-w-0 flex-1 cursor-pointer"
+                            >
+                              <div className="w-9 h-9 rounded-xl bg-[#1C1C1E] border border-white/10 text-white font-mono text-xs font-bold flex items-center justify-center shrink-0">
+                                {String(idx + 1).padStart(2, '0')}
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <h4 className="text-sm font-bold text-white truncate">
+                                  {mod.title}
+                                </h4>
+                                <p className="text-xs text-[#8E8E93] truncate mt-0.5">
+                                  {mod.subtitle}
+                                </p>
+                              </div>
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteModule(mod.id, mod.title)}
+                              className="p-2 rounded-xl text-[#8E8E93] hover:text-rose-400 hover:bg-rose-500/15 transition-colors cursor-pointer shrink-0"
+                              title="Delete Module"
+                            >
+                              <Trash2 size={15} />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })()
+          )}
         </div>
       )}
 
@@ -1683,6 +2204,230 @@ export default function AdminDashboardView({
                 Confirm Delete
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL 3: CREATE NEW ROLE (APPLE STYLE)                                    */}
+      {/* ========================================================================= */}
+      {isCreateRoleModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="w-full max-w-sm bg-[#0A0A0C] border border-white/15 rounded-2xl p-6 space-y-4 text-white shadow-2xl animate-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between pb-2 border-b border-white/10">
+              <h3 className="text-base font-bold text-white">New Role</h3>
+              <button
+                type="button"
+                onClick={() => setIsCreateRoleModalOpen(false)}
+                className="w-8 h-8 rounded-full bg-[#1C1C1E] flex items-center justify-center text-white cursor-pointer"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                const trimmed = newRoleNameInput.trim();
+                if (!trimmed) return;
+                if (assignmentRoles.some((r) => r.toLowerCase() === trimmed.toLowerCase())) {
+                  showToast('Role already exists.');
+                  return;
+                }
+                sounds.playCorrect();
+                const updatedRoles = [...assignmentRoles, trimmed];
+                setAssignmentRoles(updatedRoles);
+                localStorage.setItem('guruji_assignment_roles', JSON.stringify(updatedRoles));
+                setSelectedAssignmentRole(trimmed);
+                setIsCreateRoleModalOpen(false);
+                setNewRoleNameInput('');
+                showToast(`Role '${trimmed}' created.`);
+              }}
+              className="space-y-4"
+            >
+              <div>
+                <label className="text-xs text-[#8E8E93] block mb-1.5">Role Name</label>
+                <input
+                  type="text"
+                  required
+                  autoFocus
+                  placeholder="e.g. Line Supervisor"
+                  value={newRoleNameInput}
+                  onChange={(e) => setNewRoleNameInput(e.target.value)}
+                  className="w-full h-11 px-3.5 rounded-xl bg-[#1C1C1E] border border-white/15 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-white/30"
+                />
+              </div>
+
+              <div className="pt-1 flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsCreateRoleModalOpen(false)}
+                  className="px-4 py-2 rounded-xl border border-white/10 text-xs font-semibold text-[#8E8E93] hover:text-white cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 rounded-xl bg-white text-black font-bold text-xs hover:bg-slate-100 cursor-pointer shadow-md"
+                >
+                  Create Role
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL 4: ADD MODULE TO SELECTED ROLE (APPLE STYLE)                        */}
+      {/* ========================================================================= */}
+      {isAddModuleModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="w-full max-w-sm bg-[#0A0A0C] border border-white/15 rounded-2xl p-6 space-y-4 text-white shadow-2xl animate-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between pb-2 border-b border-white/10">
+              <div>
+                <h3 className="text-base font-bold text-white">Add Module</h3>
+                <p className="text-[11px] text-[#8E8E93] mt-0.5">
+                  {selectedAssignmentRole}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsAddModuleModalOpen(false)}
+                className="w-8 h-8 rounded-full bg-[#1C1C1E] flex items-center justify-center text-white cursor-pointer"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                const selectedSop = effectiveLessons.find((l) => l.id === newModuleSopId);
+                const finalTitle =
+                  newModuleTitleInput.trim() ||
+                  selectedSop?.title ||
+                  'Standard Operating Procedure';
+                const finalSubtitle =
+                  newModuleSubtitleInput.trim() ||
+                  (assignmentSubView === 'new_hire'
+                    ? 'Day 1–10 · Core SOP'
+                    : assignmentSubView === 'continuous'
+                    ? 'Ongoing · Mandatory'
+                    : 'Selective Upskilling');
+
+                sounds.playCorrect();
+                const activeRole = assignmentRoles.includes(selectedAssignmentRole)
+                  ? selectedAssignmentRole
+                  : assignmentRoles[0] || 'General Operator';
+                const phaseKey = `${assignmentSubView}__${activeRole}`;
+                const existing = roleModulesMap[phaseKey] || [];
+
+                const newItem: RoleModuleItem = {
+                  id: `mod_${Date.now()}`,
+                  title: finalTitle,
+                  subtitle: finalSubtitle,
+                  sopId: selectedSop?.id || 'picking-101',
+                };
+
+                const nextMap = {
+                  ...roleModulesMap,
+                  [phaseKey]: [...existing, newItem],
+                };
+                setRoleModulesMap(nextMap);
+                localStorage.setItem('guruji_role_phase_modules', JSON.stringify(nextMap));
+
+                // Also sync with Employee Learning Journey campaigns
+                const mappedPhase: JourneyPhaseType =
+                  assignmentSubView === 'new_hire'
+                    ? 'Phase 1: New Hire (Day 1–10)'
+                    : assignmentSubView === 'continuous'
+                    ? 'Phase 2: Continuous / Mandate'
+                    : 'Phase 3: Selective Upskilling';
+
+                const newCamp: CampaignItem = {
+                  id: `c_${Date.now()}`,
+                  title: finalTitle,
+                  sop: `${activeRole} · ${finalSubtitle}`,
+                  sopId: newItem.sopId,
+                  target: activeRole,
+                  department: activeRole,
+                  location: 'All Facilities',
+                  completion: 0,
+                  journeyPhase: mappedPhase,
+                };
+                const updatedCamps = [newCamp, ...campaigns];
+                setCampaigns(updatedCamps);
+                localStorage.setItem('guruji_admin_campaigns', JSON.stringify(updatedCamps));
+
+                setIsAddModuleModalOpen(false);
+                setNewModuleTitleInput('');
+                showToast(`Added '${finalTitle}' to ${activeRole}.`);
+              }}
+              className="space-y-3.5"
+            >
+              <div>
+                <label className="text-xs text-[#8E8E93] block mb-1">Select from SOP Library</label>
+                <select
+                  value={newModuleSopId}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setNewModuleSopId(val);
+                    const found = effectiveLessons.find((l) => l.id === val);
+                    if (found) {
+                      setNewModuleTitleInput(found.title);
+                    }
+                  }}
+                  className="w-full h-10 px-3 rounded-xl bg-[#1C1C1E] border border-white/15 text-xs text-white focus:outline-none cursor-pointer"
+                >
+                  <option value="custom">Custom Module Title...</option>
+                  {effectiveLessons.map((l) => (
+                    <option key={l.id} value={l.id}>
+                      {l.title}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="text-xs text-[#8E8E93] block mb-1">Module Title</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Aseptic Gowning & Airlock Protocol"
+                  value={newModuleTitleInput}
+                  onChange={(e) => setNewModuleTitleInput(e.target.value)}
+                  className="w-full h-10 px-3 rounded-xl bg-[#1C1C1E] border border-white/15 text-xs text-white placeholder:text-slate-500 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs text-[#8E8E93] block mb-1">Details / Schedule</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Day 1–3 · Core SOP"
+                  value={newModuleSubtitleInput}
+                  onChange={(e) => setNewModuleSubtitleInput(e.target.value)}
+                  className="w-full h-10 px-3 rounded-xl bg-[#1C1C1E] border border-white/15 text-xs text-white placeholder:text-slate-500 focus:outline-none"
+                />
+              </div>
+
+              <div className="pt-2 flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsAddModuleModalOpen(false)}
+                  className="px-4 py-2 rounded-xl border border-white/10 text-xs font-semibold text-[#8E8E93] hover:text-white cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 rounded-xl bg-white text-black font-bold text-xs hover:bg-slate-100 cursor-pointer shadow-md"
+                >
+                  Add Module
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

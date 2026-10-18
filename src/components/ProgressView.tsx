@@ -298,7 +298,7 @@ export default function ProgressView({ lessons, onStartSimulation, onOpenLearnin
               Employee Learning Journey
             </h3>
             <p className="text-xs text-[#8E8E93] font-normal truncate mt-0.5">
-              Onboarding → Continuous Learning → Upskilling
+              New Hire (Day 1–10) → Continuous & Mandates → Selective Upskilling
             </p>
           </div>
         </div>
